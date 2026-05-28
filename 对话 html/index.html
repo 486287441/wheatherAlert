@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Windows 天气提醒 PRD 选题</title>
+  <style>
+    :root {
+      --paper: #f5f4ed;
+      --paper-2: #efeee5;
+      --ink: #1f1d18;
+      --ink-muted: #6b665b;
+      --accent: #1B365D;
+      --rule: #d4d1c5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Noto Serif SC", "Source Serif Pro", Georgia, serif;
+      line-height: 1.5;
+    }
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 3.5rem 2.5rem;
+    }
+    .folio {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.8rem;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 0.6rem;
+      color: var(--ink-muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .folio div:nth-child(2) { text-align: center; }
+    .folio div:nth-child(3) { text-align: right; }
+    h1 {
+      margin: 1.6rem 0 0.8rem;
+      font-size: clamp(2rem, 4.8vw, 3.1rem);
+      line-height: 1.2;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+    .lede {
+      margin: 0 0 1.4rem;
+      font-size: 1.05rem;
+      color: #3a382f;
+    }
+    .progress-wrap {
+      border: 1px solid var(--rule);
+      background: var(--paper-2);
+      padding: 0.75rem 0.85rem;
+      margin-bottom: 1rem;
+    }
+    .progress-bar {
+      margin-top: 0.45rem;
+      width: 100%;
+      height: 8px;
+      background: #e2dfd4;
+      overflow: hidden;
+    }
+    #progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s ease;
+    }
+    .panel {
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      padding: 1.05rem 1.15rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .section-num {
+      color: var(--accent);
+      font-weight: 500;
+    }
+    h2 {
+      margin: 0 0 0.7rem;
+      font-size: 1.2rem;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+    .settled-list {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+    .settled-list li { margin: 0.25rem 0; }
+    .question {
+      border-top: 1px solid var(--rule);
+      padding-top: 0.85rem;
+      margin-top: 0.85rem;
+    }
+    .question:first-child {
+      border-top: none;
+      margin-top: 0;
+      padding-top: 0;
+    }
+    .q-title {
+      margin: 0 0 0.25rem;
+      font-size: 1.04rem;
+      font-weight: 500;
+    }
+    .q-hint {
+      margin: 0 0 0.5rem;
+      color: var(--ink-muted);
+      font-size: 0.95rem;
+    }
+    .q-options label {
+      display: block;
+      margin: 0.35rem 0;
+      cursor: pointer;
+    }
+    .q-options input[type="radio"] {
+      margin-right: 0.35rem;
+      accent-color: var(--accent);
+    }
+    .q-options label.custom-row { display: block; }
+    .custom-input-wrap {
+      margin: 0.35rem 0 0.5rem 1.6rem;
+      display: none;
+    }
+    .custom-input-wrap.visible { display: block; }
+    .custom-input-wrap input[type="text"] {
+      width: 100%;
+      max-width: 36rem;
+      padding: 0.55rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      border: 1px solid var(--rule);
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .custom-input-wrap input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.8rem;
+    }
+    button {
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #f7f6f0;
+      font-family: inherit;
+      font-size: 0.94rem;
+      padding: 0.5rem 0.9rem;
+      cursor: pointer;
+    }
+    button[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: var(--paper);
+      color: var(--accent);
+    }
+    #status-banner {
+      margin-top: 0.75rem;
+      padding: 0.6rem 0.7rem;
+      border: 1px solid var(--rule);
+      min-height: 2.2rem;
+      font-size: 0.94rem;
+      background: #f2f0e7;
+    }
+    #status-banner.ok {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    #status-banner.warn {
+      border-color: #7d6340;
+      color: #6a4f2d;
+      background: #f6efe1;
+    }
+    .colophon {
+      margin-top: 1.8rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--rule);
+      color: var(--ink-muted);
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="folio">
+      <div>Weather Alert PRD</div>
+      <div>Phase 1</div>
+      <div>Windows</div>
+    </header>
+
+    <h1>Windows 后台天气提醒 · 产品需求拍板</h1>
+    <p class="lede">
+      这是在敲定<strong>产品需求（PRD）</strong>，请从使用者角度点选；<strong>不涉及</strong>编程框架或部署方式（技术路线稍后写在 <code>plan/技术方案.md</code>）。
+      每题除选项外还可选 <strong>“其他（自己填写）”</strong> 并打字说明。全部必答题选完后点 <strong>“保存到项目”</strong>，再在 Cursor 回复 <strong>已提交</strong>。请用 <strong>http://localhost:3000</strong> 打开，不要用 file://。
+    </p>
+
+    <section class="progress-wrap">
+      <div id="progress-text">已完成 0 / 0 题</div>
+      <div class="progress-bar"><div id="progress-fill"></div></div>
+    </section>
+
+    <section class="panel" id="section-a">
+      <h2><span class="section-num">一、</span>已定（来自粗糙需求，无需选择）</h2>
+      <ul class="settled-list">
+        <li>软件在 Windows 后台常驻运行，每小时自动获取未来 24-48 小时逐小时天气。</li>
+        <li>重点检测“今天是否下雨”和“明天是否下雨”。</li>
+        <li>任一目标日期出现降雨时，用 Windows 原生 Toast + 官方通知音提醒。</li>
+        <li>同一天降雨提醒只通知一次，避免重复骚扰。</li>
+        <li>程序需要本地持久化通知状态，重启后可恢复。</li>
+        <li>总体目标是“轻量、低打扰、可靠”。</li>
+      </ul>
+    </section>
+
+    <section class="panel" id="section-b">
+      <h2><span class="section-num">二、</span>待你拍板</h2>
+      <div id="questions-root"></div>
+    </section>
+
+    <section class="panel" id="submit-panel">
+      <h2><span class="section-num">三、</span>提交给 Agent</h2>
+      <p>全部必答题完成后，点主按钮一键写入 <strong>对话 html/choices.json</strong>（须通过 localhost:3000 打开）。</p>
+      <div class="btn-row">
+        <button type="button" id="btn-save-project">保存到项目</button>
+        <button type="button" class="secondary" id="btn-copy">复制 JSON（备用）</button>
+        <button type="button" class="secondary" id="btn-reload">从 choices.json 重新加载</button>
+        <button type="button" class="secondary" id="btn-clear">清空我的选择</button>
+      </div>
+      <div id="status-banner"></div>
+    </section>
+
+    <footer class="colophon">
+      <span>Kami Parchment Style</span>
+      <span>localhost:3000</span>
+      <span>Weather Alert PRD</span>
+    </footer>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'weather_alert_prd_choices_v1';
+    const CUSTOM_VALUE = '__custom__';
+    const QUESTIONS = [
+      {
+        id: 'q_rain_threshold',
+        required: true,
+        title: '达到什么情况才算“需要提醒有雨”？',
+        hint: '决定提醒灵敏度，避免过度提醒或漏提醒。',
+        options: [
+          { value: 'any_rain', label: '只要有降雨概率或降雨信号就提醒' },
+          { value: 'light_or_above', label: '小雨及以上才提醒，毛毛雨不提醒' },
+          { value: 'moderate_or_above', label: '中雨及以上才提醒，控制打扰频率' }
+        ]
+      },
+      {
+        id: 'q_notify_time_window',
+        required: true,
+        title: '提醒是否需要“免打扰时段”？',
+        hint: '例如夜间不打扰，白天正常提醒。',
+        options: [
+          { value: 'all_day', label: '全天可提醒，任何时间都允许通知' },
+          { value: 'daytime_only', label: '仅白天提醒（例如 07:00-22:00）' },
+          { value: 'work_hours_only', label: '仅工作学习时段提醒（例如 09:00-21:00）' }
+        ]
+      },
+      {
+        id: 'q_notification_style',
+        required: true,
+        title: '通知文案你希望是哪种风格？',
+        hint: '影响一次通知里给出的信息量。',
+        options: [
+          { value: 'brief', label: '简洁一句：今天/明天有雨，请带伞' },
+          { value: 'time_slots', label: '给出主要下雨时段 + 一句建议' },
+          { value: 'detailed', label: '详细说明时段、强度和建议' }
+        ]
+      },
+      {
+        id: 'q_network_failure_handling',
+        required: true,
+        title: '如果天气接口临时失败，希望怎么处理？',
+        hint: '平衡稳定性与打扰程度。',
+        options: [
+          { value: 'silent_next_hour', label: '本轮静默失败，下个整点再试' },
+          { value: 'retry_then_silent', label: '本轮自动重试 2-3 次，仍失败则静默' },
+          { value: 'retry_with_notice', label: '自动重试；连续失败时给一次“获取失败”提醒' }
+        ]
+      },
+      {
+        id: 'q_city_scope',
+        required: true,
+        title: '首版要支持几个城市？',
+        hint: '决定首版产品复杂度与价值。',
+        options: [
+          { value: 'single_city', label: '只支持一个固定城市（最轻量）' },
+          { value: 'switchable_city', label: '支持手动切换一个当前城市' },
+          { value: 'multi_city', label: '支持多个城市并分别提醒' }
+        ]
+      },
+      {
+        id: 'q_user_control_level',
+        required: true,
+        title: '你希望首版给到多少可配置能力？',
+        hint: '决定是否需要托盘菜单与设置入口。',
+        options: [
+          { value: 'minimal_no_ui', label: '极简：安装后后台跑，几乎不需要界面' },
+          { value: 'tray_basic', label: '有托盘菜单，可看状态、手动检查、退出' },
+          { value: 'tray_with_settings', label: '托盘 + 简单设置（时段、城市、提醒风格）' }
+        ]
+      }
+    ];
+
+    let choices = {};
+
+    function customFieldId(qid) {
+      return qid + '_custom';
+    }
+
+    function loadLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return {};
+        const data = JSON.parse(raw);
+        return data && typeof data === 'object' ? data : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function persistChoices() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(choices));
+    }
+
+    function isQuestionAnswered(q) {
+      const v = choices[q.id];
+      if (v === undefined || v === null || String(v).length === 0) return false;
+      if (v === CUSTOM_VALUE) {
+        return String(choices[customFieldId(q.id)] || '').trim().length > 0;
+      }
+      return true;
+    }
+
+    function allRequiredAnswered() {
+      return QUESTIONS.filter((q) => q.required).every(isQuestionAnswered);
+    }
+
+    function buildExportPayload(submitted) {
+      const cleanChoices = { ...choices };
+      QUESTIONS.forEach((q) => {
+        if (cleanChoices[q.id] !== CUSTOM_VALUE) {
+          delete cleanChoices[customFieldId(q.id)];
+        }
+      });
+      return {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        submitted: !!submitted,
+        choices: cleanChoices
+      };
+    }
+
+    function renderQuestions() {
+      const root = document.getElementById('questions-root');
+      root.innerHTML = '';
+      QUESTIONS.forEach((q, index) => {
+        const box = document.createElement('article');
+        box.className = 'question';
+
+        const title = document.createElement('h3');
+        title.className = 'q-title';
+        title.textContent = (index + 1) + '. ' + q.title;
+        box.appendChild(title);
+
+        const hint = document.createElement('p');
+        hint.className = 'q-hint';
+        hint.textContent = q.hint;
+        box.appendChild(hint);
+
+        const opts = document.createElement('div');
+        opts.className = 'q-options';
+
+        q.options.forEach((opt) => {
+          const label = document.createElement('label');
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = q.id;
+          radio.value = opt.value;
+          radio.checked = choices[q.id] === opt.value;
+          radio.addEventListener('change', () => {
+            choices[q.id] = opt.value;
+            delete choices[customFieldId(q.id)];
+            persistChoices();
+            updateUI();
+            renderQuestions();
+          });
+          label.appendChild(radio);
+          label.appendChild(document.createTextNode(' ' + opt.label));
+          opts.appendChild(label);
+        });
+
+        const customLabelText = q.customOptionLabel || '其他（自己填写）';
+        const customPlaceholder = q.customPlaceholder || '请用一句话说明你的想法...';
+
+        const customRadioLabel = document.createElement('label');
+        customRadioLabel.className = 'custom-row';
+        const customRadio = document.createElement('input');
+        customRadio.type = 'radio';
+        customRadio.name = q.id;
+        customRadio.value = CUSTOM_VALUE;
+        if (choices[q.id] === CUSTOM_VALUE) customRadio.checked = true;
+
+        const customWrap = document.createElement('div');
+        customWrap.className = 'custom-input-wrap' + (choices[q.id] === CUSTOM_VALUE ? ' visible' : '');
+
+        const customInput = document.createElement('input');
+        customInput.type = 'text';
+        customInput.placeholder = customPlaceholder;
+        customInput.value = choices[customFieldId(q.id)] || '';
+        customInput.setAttribute('aria-label', customLabelText);
+
+        function syncCustom() {
+          if (choices[q.id] === CUSTOM_VALUE) {
+            customWrap.classList.add('visible');
+            customInput.disabled = false;
+          } else {
+            customWrap.classList.remove('visible');
+            customInput.disabled = true;
+          }
+        }
+
+        customRadio.addEventListener('change', () => {
+          choices[q.id] = CUSTOM_VALUE;
+          syncCustom();
+          customInput.focus();
+          persistChoices();
+          updateUI();
+        });
+
+        customInput.addEventListener('input', () => {
+          choices[customFieldId(q.id)] = customInput.value;
+          if (choices[q.id] !== CUSTOM_VALUE) {
+            choices[q.id] = CUSTOM_VALUE;
+            customRadio.checked = true;
+            document.querySelectorAll('input[name="' + q.id + '"]').forEach((el) => {
+              if (el !== customRadio) el.checked = false;
+            });
+          }
+          syncCustom();
+          persistChoices();
+          updateUI();
+        });
+
+        customRadioLabel.appendChild(customRadio);
+        customRadioLabel.appendChild(document.createTextNode(' ' + customLabelText));
+        customWrap.appendChild(customInput);
+        opts.appendChild(customRadioLabel);
+        opts.appendChild(customWrap);
+        syncCustom();
+
+        box.appendChild(opts);
+        root.appendChild(box);
+      });
+    }
+
+    function updateUI() {
+      const required = QUESTIONS.filter((q) => q.required);
+      const done = required.filter(isQuestionAnswered).length;
+      const total = required.length;
+      document.getElementById('progress-text').textContent = '已完成 ' + done + ' / ' + total + ' 题';
+      document.getElementById('progress-fill').style.width = total ? (100 * done / total) + '%' : '0%';
+      document.getElementById('btn-save-project').disabled = !allRequiredAnswered();
+    }
+
+    document.getElementById('btn-save-project').addEventListener('click', async () => {
+      const payload = buildExportPayload(true);
+      const banner = document.getElementById('status-banner');
+      try {
+        const res = await fetch('/api/save-choices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const savedPath = data.path || 'choices.json';
+        banner.className = 'ok';
+        banner.innerHTML =
+          '已写入 <code>' + savedPath + '</code>。请确认路径在项目 <strong>对话 html/</strong> 下，再在 Cursor 回复 <strong>已提交</strong>。';
+      } catch (e) {
+        banner.className = 'warn';
+        banner.innerHTML =
+          '无法一键保存（' + e.message + '）。请使用「复制 JSON」粘贴到对话并回复“已提交”；恢复本地服务后再点一次保存到项目。';
+      }
+    });
+
+    document.getElementById('btn-copy').addEventListener('click', async () => {
+      const text = JSON.stringify(buildExportPayload(true), null, 2);
+      await navigator.clipboard.writeText(text);
+      const banner = document.getElementById('status-banner');
+      banner.className = 'ok';
+      banner.textContent = '已复制 JSON。请粘贴到 Cursor 对话并回复“已提交”。';
+    });
+
+    document.getElementById('btn-reload').addEventListener('click', async () => {
+      const banner = document.getElementById('status-banner');
+      try {
+        const res = await fetch('/choices.json?ts=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const loaded = data.choices || data.answers || {};
+        choices = loaded && typeof loaded === 'object' ? loaded : {};
+        persistChoices();
+        renderQuestions();
+        updateUI();
+        banner.className = 'ok';
+        banner.textContent = '已从 choices.json 重新加载。';
+      } catch (e) {
+        banner.className = 'warn';
+        banner.textContent = '重新加载失败（' + e.message + '），请确认是通过 localhost:3000 打开。';
+      }
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      choices = {};
+      persistChoices();
+      renderQuestions();
+      updateUI();
+      const banner = document.getElementById('status-banner');
+      banner.className = '';
+      banner.textContent = '已清空当前选择。';
+    });
+
+    choices = loadLocal();
+    renderQuestions();
+    updateUI();
+  </script>
+</body>
+</html>

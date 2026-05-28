@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.2" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WeatherAlert.Core\WeatherAlert.Core.csproj" />
+    <ProjectReference Include="..\WeatherAlert.Infrastructure\WeatherAlert.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <Target Name="BuildWinUi" BeforeTargets="CopyWinUiOutput">
+    <MSBuild Projects="..\WeatherAlert.WinUI\WeatherAlert.WinUI.csproj" Properties="Configuration=$(Configuration)" />
+  </Target>
+
+  <Target Name="CopyWinUiOutput" AfterTargets="Build">
+    <ItemGroup>
+      <WinUiFiles Include="..\WeatherAlert.WinUI\bin\$(Configuration)\net10.0-windows10.0.19041.0\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(WinUiFiles)" DestinationFolder="$(OutputPath)%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\WeatherAlert.WinUI\bin\$(Configuration)\net10.0-windows10.0.19041.0')" />
+  </Target>
+</Project>

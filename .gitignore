@@ -1,0 +1,50 @@
+bin/
+obj/
+.vs/
+.idea/
+logs/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.secret
+*.secrets
+secrets.*
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+id_rsa
+id_dsa
+
+# Tokens and credentials files
+credentials.json
+service-account*.json
+auth.json
+token.json
+appsettings.Local.json
+appsettings.*.local.json
+
+# Runtime / logs / local DB
+*.log
+*.tmp
+*.cache
+*.sqlite
+*.sqlite3
+*.db
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+*.swp
+
+# Build artifacts
+dist/
+build/
+out/
+artifacts/
