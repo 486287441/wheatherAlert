@@ -1,0 +1,6 @@
+{
+  "Weather": {
+    "ApiKey": "YOUR_QWEATHER_API_KEY",
+    "ApiBaseUrl": "https://your-api-host.qweatherapi.com"
+  }
+}

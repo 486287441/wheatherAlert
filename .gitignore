@@ -1,10 +1,36 @@
-bin/
-obj/
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ist/
+[Bb]uild/
+[Oo]ut/
+[Aa]rtifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# IDE
 .vs/
 .idea/
-logs/
+*.rsuser
+*.DotSettings.user
 
-# Environment and secrets
+# Logs and runtime data
+[Ll]ogs/
+*.log
+*.tmp
+*.cache
+data/
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# Environment and secrets (never commit real keys)
 .env
 .env.*
 !.env.example
@@ -17,34 +43,26 @@ secrets.*
 *.pfx
 *.jks
 *.keystore
-*.crt
-*.cer
-id_rsa
-id_dsa
-
-# Tokens and credentials files
 credentials.json
 service-account*.json
 auth.json
 token.json
 appsettings.Local.json
 appsettings.*.local.json
+appsettings.*.secrets.json
+**/appsettings.Production.json
 
-# Runtime / logs / local DB
-*.log
-*.tmp
-*.cache
-*.sqlite
-*.sqlite3
-*.db
-
-# OS and editor noise
+# OS noise
 .DS_Store
 Thumbs.db
+Desktop.ini
 *.swp
+*~
 
-# Build artifacts
-dist/
-build/
-out/
-artifacts/
+# Publish / packages
+publish/
+*.nupkg
+*.snupkg
+
+# Cursor / local planning artifacts (optional local only)
+对话 html/

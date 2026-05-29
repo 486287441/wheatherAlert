@@ -1,0 +1,38 @@
+<Window x:Class="WeatherAlert.TrayPopup.Wpf.Views.FrostedTrayMenuWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WeatherAlert Menu"
+        Width="280"
+        Height="268"
+        WindowStartupLocation="Manual"
+        ShowActivated="False"
+        Focusable="True">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/WeatherAlert.TrayPopup.Wpf;component/Themes/FrostedResources.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border Style="{StaticResource FrostedCardBorder}">
+        <StackPanel>
+            <TextBlock Text="WeatherAlert"
+                       Style="{StaticResource FrostedTitleText}" />
+            <TextBlock Text="托盘菜单"
+                       Style="{StaticResource FrostedSubtitleText}" />
+            <Button Style="{StaticResource FrostedMenuButton}"
+                    Content="立即检查"
+                    Click="OnCheckNowClick" />
+            <Button Style="{StaticResource FrostedMenuButton}"
+                    Content="查看历史通知"
+                    Click="OnHistoryClick" />
+            <Button Style="{StaticResource FrostedMenuButton}"
+                    Content="切换城市"
+                    Click="OnChangeCityClick" />
+            <Button Style="{StaticResource FrostedMenuButtonDanger}"
+                    Content="退出"
+                    Margin="0,6,0,0"
+                    Click="OnExitClick" />
+        </StackPanel>
+    </Border>
+</Window>

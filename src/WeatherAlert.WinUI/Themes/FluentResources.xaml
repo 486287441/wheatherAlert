@@ -1,6 +1,0 @@
-<ResourceDictionary
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <x:Double x:Key="FluentCornerRadius">12</x:Double>
-    <Thickness x:Key="FluentPagePadding">24</Thickness>
-</ResourceDictionary>
