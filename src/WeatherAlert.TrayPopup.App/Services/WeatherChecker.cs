@@ -107,8 +107,8 @@ public sealed class WeatherChecker : IWeatherChecker
             return;
         }
 
-        var periodText = string.Join("?", summary.TimeRanges.Select(x => $"{x.Start:HH:mm}-{x.End:HH:mm}"));
-        var body = $"{summary.Date:yyyy-MM-dd} {periodText} ?? {summary.IntensityLabel}";
+        var periodText = RainSummaryFormatter.FormatTimeRanges(summary.TimeRanges);
+        var body = $"{summary.Date:yyyy-MM-dd} {periodText}，{RainSummaryFormatter.FormatIntensity(summary.IntensityLabel)}";
         var hash = CreateMessageHash(cityCode, summary.Date, body);
 
         await _notificationStateRepository.MarkNotifiedAsync(cityCode, summary.Date, hash, cancellationToken);

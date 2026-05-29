@@ -1,6 +1,5 @@
 using System.Windows;
 using WeatherAlert.TrayPopup.Core.Abstractions;
-using WeatherAlert.TrayPopup.Wpf.Chrome;
 
 namespace WeatherAlert.TrayPopup.Wpf.Views;
 
@@ -12,9 +11,10 @@ public partial class HistoryWindow : Window
     {
         _historyRepository = historyRepository;
         InitializeComponent();
-        FrostedShell.Apply(this);
         Loaded += OnLoaded;
     }
+
+    private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {

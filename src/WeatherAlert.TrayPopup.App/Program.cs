@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.Http;
 using Serilog;
 using WeatherAlert.TrayPopup.App;
@@ -10,7 +11,14 @@ using WeatherAlert.TrayPopup.Infrastructure.Persistence;
 using WeatherAlert.TrayPopup.Infrastructure.Time;
 using WeatherAlert.TrayPopup.Infrastructure.Weather;
 
-var builder = Host.CreateApplicationBuilder(args);
+var appBase = AppContext.BaseDirectory;
+Directory.SetCurrentDirectory(appBase);
+
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = args,
+    ContentRootPath = appBase,
+});
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

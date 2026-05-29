@@ -35,12 +35,30 @@ Windows 托盘应用：定时查询和风天气，今天或明天有雨时切换
 
 ## 运行
 
+**一键启动（推荐）**
+
+| 方式 | 命令 |
+|------|------|
+| 资源管理器 | 双击 `start.bat` |
+| PowerShell | `.\start.bat` 或 `.\start.ps1` |
+| CMD | `start.bat` |
+
+PowerShell 下必须加 `.\` 前缀，否则会报“无法识别 start.bat”。首次运行会自动编译 Release 版本。
+
+立即执行一次检查：
+
+```powershell
+.\start.bat --check-now
+# 或
+.\start.ps1 --check-now
+```
+
+**开发调试（dotnet run）**
+
 ```powershell
 cd d:\code\wheatherAlert
 dotnet run --project src/WeatherAlert.TrayPopup.App
 ```
-
-立即执行一次检查（不启动完整托盘循环时可配合调试）：
 
 ```powershell
 dotnet run --project src/WeatherAlert.TrayPopup.App -- --check-now

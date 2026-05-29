@@ -94,7 +94,11 @@ public sealed class TrayHostedService : IHostedService, IDisposable
 
     private void RunStaLoop()
     {
-        _wpfApp = new Application();
+        _wpfApp = new Application
+        {
+            // Tray app has no main window; only close via menu "退出" or host shutdown.
+            ShutdownMode = ShutdownMode.OnExplicitShutdown
+        };
 
         _notifyIcon = new NotifyIcon
         {
@@ -127,10 +131,40 @@ public sealed class TrayHostedService : IHostedService, IDisposable
     private async Task RunManualCheckAsync()
     {
         var result = await RefreshTrayIconAsync();
-        var text = result.HasAnyRain
-            ? "已完成检查：有降雨提醒。"
-            : "已完成检查：今天和明天无降雨提醒。";
-        _notifyIcon?.ShowBalloonTip(3000, "WeatherAlert", text, ToolTipIcon.Info);
+        await ShowManualCheckNotificationsAsync(result);
+    }
+
+    private async Task ShowManualCheckNotificationsAsync(RainCheckResult result)
+    {
+        if (_notifyIcon is null)
+        {
+            return;
+        }
+
+        if (!result.HasAnyRain)
+        {
+            _notifyIcon.ShowBalloonTip(4000, "WeatherAlert", "今天和明天均无降雨。", ToolTipIcon.Info);
+            return;
+        }
+
+        ShowDayRainBalloon("今天", result.Today);
+        await Task.Delay(4000);
+        ShowDayRainBalloon("明天", result.Tomorrow);
+    }
+
+    private void ShowDayRainBalloon(string dayLabel, DailyRainSummary summary)
+    {
+        if (_notifyIcon is null)
+        {
+            return;
+        }
+
+        var icon = summary.HasRain ? ToolTipIcon.Warning : ToolTipIcon.Info;
+        _notifyIcon.ShowBalloonTip(
+            5000,
+            $"降雨提醒 · {dayLabel}",
+            RainSummaryFormatter.FormatBalloonBody(summary),
+            icon);
     }
 
     private async Task<RainCheckResult> RefreshTrayIconAsync()
@@ -167,21 +201,22 @@ public sealed class TrayHostedService : IHostedService, IDisposable
             return;
         }
 
-        try
+        // BeginInvoke avoids deadlocking the tray menu thread (WinForms callback + WPF Invoke).
+        _wpfApp.Dispatcher.BeginInvoke(() =>
         {
-            _wpfApp.Dispatcher.Invoke(() =>
+            try
             {
                 using var scope = _serviceProvider.CreateScope();
                 var historyRepository = scope.ServiceProvider.GetRequiredService<INotificationHistoryRepository>();
                 var window = new HistoryWindow(historyRepository);
-                window.ShowDialog();
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to open history window.");
-            _notifyIcon?.ShowBalloonTip(3000, "WeatherAlert", "打开历史通知失败，请查看日志。", ToolTipIcon.Error);
-        }
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open history window.");
+                _notifyIcon?.ShowBalloonTip(3000, "WeatherAlert", "打开历史通知失败，请查看日志。", ToolTipIcon.Error);
+            }
+        });
     }
 
     private async Task ShowCityDialogAsync()

@@ -1,4 +1,3 @@
-using System.Text;
 using System.Windows;
 using WeatherAlert.TrayPopup.Core.Models;
 using WeatherAlert.TrayPopup.Wpf.Chrome;
@@ -31,15 +30,5 @@ public partial class FrostedFlyoutWindow : Window
     }
 
     private static string FormatDay(string label, DailyRainSummary summary)
-    {
-        if (!summary.HasRain)
-        {
-            return $"{label}：无降雨";
-        }
-
-        var ranges = string.Join("，", summary.TimeRanges.Select(r => $"{r.Start:HH:mm}-{r.End:HH:mm}"));
-        var builder = new StringBuilder();
-        builder.Append($"{label}：{ranges}，强度 {summary.IntensityLabel}");
-        return builder.ToString();
-    }
+        => RainSummaryFormatter.FormatDayLine(label, summary);
 }
