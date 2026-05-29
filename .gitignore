@@ -22,6 +22,8 @@
 *.tmp
 *.cache
 data/
+!src/WeatherAlert.TrayPopup.Infrastructure/Data/
+!src/WeatherAlert.TrayPopup.Infrastructure/Data/china-cities.csv
 
 # Local databases
 *.sqlite

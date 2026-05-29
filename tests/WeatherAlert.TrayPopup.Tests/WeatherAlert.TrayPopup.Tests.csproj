@@ -20,4 +20,10 @@
     <ProjectReference Include="..\..\src\WeatherAlert.TrayPopup.Infrastructure\WeatherAlert.TrayPopup.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\WeatherAlert.TrayPopup.Wpf\WeatherAlert.TrayPopup.Wpf.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\src\WeatherAlert.TrayPopup.Infrastructure\Data\china-cities.csv">
+      <Link>Data\china-cities.csv</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

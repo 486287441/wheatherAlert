@@ -1,15 +1,18 @@
 using System.Windows;
 using WeatherAlert.TrayPopup.Core.Abstractions;
+using WeatherAlert.TrayPopup.Core.Models;
 
 namespace WeatherAlert.TrayPopup.Wpf.Views;
 
 public partial class HistoryWindow : Window
 {
     private readonly INotificationHistoryRepository _historyRepository;
+    private readonly ICityCatalog _cityCatalog;
 
-    public HistoryWindow(INotificationHistoryRepository historyRepository)
+    public HistoryWindow(INotificationHistoryRepository historyRepository, ICityCatalog cityCatalog)
     {
         _historyRepository = historyRepository;
+        _cityCatalog = cityCatalog;
         InitializeComponent();
         Loaded += OnLoaded;
     }
@@ -18,14 +21,14 @@ public partial class HistoryWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        Loaded -= OnLoaded;
         var rows = await _historyRepository.GetRecentAsync(100, CancellationToken.None);
-        HistoryGrid.ItemsSource = rows.Select(x => new
-        {
-            CreatedAt = x.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"),
-            Type = x.Type.ToString(),
-            x.CityCode,
-            x.Title,
-            x.Body
-        }).ToList();
+        HistoryGrid.ItemsSource = rows
+            .Select(entry =>
+            {
+                var cityName = _cityCatalog.FindById(entry.CityCode)?.DisplayName;
+                return NotificationHistoryFormatter.ToDisplayRow(entry, cityName);
+            })
+            .ToList();
     }
 }

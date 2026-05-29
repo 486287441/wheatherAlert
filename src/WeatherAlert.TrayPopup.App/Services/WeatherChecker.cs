@@ -108,7 +108,7 @@ public sealed class WeatherChecker : IWeatherChecker
         }
 
         var periodText = RainSummaryFormatter.FormatTimeRanges(summary.TimeRanges);
-        var body = $"{summary.Date:yyyy-MM-dd} {periodText}，{RainSummaryFormatter.FormatIntensity(summary.IntensityLabel)}";
+        var body = $"{periodText} 有降雨（{RainSummaryFormatter.FormatIntensity(summary.IntensityLabel)}）";
         var hash = CreateMessageHash(cityCode, summary.Date, body);
 
         await _notificationStateRepository.MarkNotifiedAsync(cityCode, summary.Date, hash, cancellationToken);
@@ -118,7 +118,7 @@ public sealed class WeatherChecker : IWeatherChecker
                 _clock.Now,
                 NotificationType.Rain,
                 cityCode,
-                $"降雨提醒 {summary.Date:yyyy-MM-dd}",
+                NotificationHistoryFormatter.FormatRainHistoryTitle(summary.Date, _clock.Now),
                 body,
                 JsonSerializer.Serialize(new { summary.IntensityLabel, rangeCount = summary.TimeRanges.Count })),
             cancellationToken);

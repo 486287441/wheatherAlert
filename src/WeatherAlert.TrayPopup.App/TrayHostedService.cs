@@ -15,14 +15,6 @@ namespace WeatherAlert.TrayPopup.App;
 
 public sealed class TrayHostedService : IHostedService, IDisposable
 {
-    private static readonly IReadOnlyDictionary<string, string> CityMap = new Dictionary<string, string>
-    {
-        ["101010100"] = "北京",
-        ["101020100"] = "上海",
-        ["101280601"] = "深圳",
-        ["101280101"] = "广州"
-    };
-
     private readonly IServiceProvider _serviceProvider;
     private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly ILogger<TrayHostedService> _logger;
@@ -208,7 +200,8 @@ public sealed class TrayHostedService : IHostedService, IDisposable
             {
                 using var scope = _serviceProvider.CreateScope();
                 var historyRepository = scope.ServiceProvider.GetRequiredService<INotificationHistoryRepository>();
-                var window = new HistoryWindow(historyRepository);
+                var cityCatalog = scope.ServiceProvider.GetRequiredService<ICityCatalog>();
+                var window = new HistoryWindow(historyRepository, cityCatalog);
                 window.Show();
             }
             catch (Exception ex)
@@ -229,35 +222,50 @@ public sealed class TrayHostedService : IHostedService, IDisposable
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var appState = scope.ServiceProvider.GetRequiredService<IAppStateRepository>();
-            var currentCityCode = await appState.GetValueAsync(AppStateKeys.CurrentCityCode, CancellationToken.None)
-                                 ?? _weatherOptions.DefaultCityCode;
+            var cityLocation = scope.ServiceProvider.GetRequiredService<ICityLocationService>();
+            var cityCatalog = scope.ServiceProvider.GetRequiredService<ICityCatalog>();
+            var current = await cityLocation.GetCurrentCityAsync(CancellationToken.None);
+            var currentCityCode = current?.Code ?? _weatherOptions.DefaultCityCode;
 
-            string? selected = null;
+            string? selectedCode = null;
+            string? selectedName = null;
             _wpfApp.Dispatcher.Invoke(() =>
             {
-                var dialog = new CitySelectionDialog(CityMap, currentCityCode);
+                var dialog = new CitySelectionDialog(cityCatalog, cityLocation, currentCityCode);
                 if (dialog.ShowDialog() == true)
                 {
-                    selected = dialog.SelectedCityCode;
+                    selectedCode = dialog.SelectedCityCode;
+                    selectedName = dialog.SelectedCityName;
                 }
             });
 
-            if (string.IsNullOrWhiteSpace(selected))
+            if (string.IsNullOrWhiteSpace(selectedCode))
             {
                 return;
             }
 
-            await appState.SetValueAsync(AppStateKeys.CurrentCityCode, selected, CancellationToken.None);
-            if (CityMap.TryGetValue(selected, out var cityName))
+            if (!string.IsNullOrWhiteSpace(selectedName))
             {
-                await appState.SetValueAsync(AppStateKeys.CurrentCityName, cityName, CancellationToken.None);
+                await cityLocation.SetCurrentCityAsync(
+                    new GeoCity(selectedCode, selectedName, null, null, "中国"),
+                    CancellationToken.None);
+            }
+            else
+            {
+                var entry = cityCatalog.FindById(selectedCode);
+                if (entry is not null)
+                {
+                    await cityLocation.SetCurrentCityAsync(entry, CancellationToken.None);
+                }
             }
 
+            var displayName = selectedName
+                                ?? cityCatalog.FindById(selectedCode)?.DisplayName
+                                ?? selectedCode;
             _notifyIcon?.ShowBalloonTip(
                 3000,
                 "WeatherAlert",
-                $"城市已切换为 {CityMap.GetValueOrDefault(selected, selected)}",
+                $"城市已切换为 {displayName}",
                 ToolTipIcon.Info);
             await RefreshTrayIconAsync();
         }

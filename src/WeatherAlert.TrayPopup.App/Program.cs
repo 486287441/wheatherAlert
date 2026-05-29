@@ -3,10 +3,12 @@ using System.Net.Http;
 using Serilog;
 using WeatherAlert.TrayPopup.App;
 using WeatherAlert.TrayPopup.App.Configuration;
+using WeatherAlert.TrayPopup.App.Location;
 using WeatherAlert.TrayPopup.App.Services;
 using WeatherAlert.TrayPopup.App.Tray;
 using WeatherAlert.TrayPopup.Core.Abstractions;
 using WeatherAlert.TrayPopup.Core.Services;
+using WeatherAlert.TrayPopup.Infrastructure.Geo;
 using WeatherAlert.TrayPopup.Infrastructure.Persistence;
 using WeatherAlert.TrayPopup.Infrastructure.Time;
 using WeatherAlert.TrayPopup.Infrastructure.Weather;
@@ -45,10 +47,24 @@ builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton<TrayIconSet>();
 builder.Services.AddSingleton<IRainDetectionService, RainDetectionService>();
 builder.Services.AddSingleton<SqliteConnectionFactory>();
+builder.Services.AddSingleton<ICityCatalog, ChinaCityCatalog>();
 builder.Services.AddSingleton<IAppStateRepository, AppStateRepository>();
 builder.Services.AddSingleton<INotificationStateRepository, NotificationStateRepository>();
 builder.Services.AddSingleton<INotificationHistoryRepository, NotificationHistoryRepository>();
+builder.Services.AddSingleton<IDeviceLocationProvider, WindowsGeolocationProvider>();
+builder.Services.AddSingleton<ICityLocationService, CityLocationService>();
 builder.Services.AddHttpClient<IWeatherApiClient, HeWeatherClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<WeatherOptions>>().Value;
+    client.BaseAddress = new Uri(options.ApiBaseUrl);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AutomaticDecompression = System.Net.DecompressionMethods.GZip
+        | System.Net.DecompressionMethods.Deflate
+        | System.Net.DecompressionMethods.Brotli
+});
+builder.Services.AddHttpClient<IGeoApiClient, HeWeatherGeoClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<WeatherOptions>>().Value;
     client.BaseAddress = new Uri(options.ApiBaseUrl);
@@ -62,6 +78,7 @@ builder.Services.AddHttpClient<IWeatherApiClient, HeWeatherClient>((sp, client) 
 builder.Services.AddSingleton<IWeatherChecker, WeatherChecker>();
 builder.Services.AddHostedService<SqliteSchemaInitializer>();
 builder.Services.AddHostedService<ConfigValidationHostedService>();
+builder.Services.AddHostedService<CityLocationBootstrapHostedService>();
 builder.Services.AddHostedService<TrayHostedService>();
 builder.Services.AddHostedService<WeatherWorker>();
 
