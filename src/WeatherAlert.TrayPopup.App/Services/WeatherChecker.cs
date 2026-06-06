@@ -18,6 +18,7 @@ public sealed class WeatherChecker : IWeatherChecker
     private readonly INotificationStateRepository _notificationStateRepository;
     private readonly INotificationHistoryRepository _notificationHistoryRepository;
     private readonly IAppStateRepository _appStateRepository;
+    private readonly IToastNotificationService _toastNotificationService;
     private readonly IOptions<WeatherOptions> _options;
     private readonly ILogger<WeatherChecker> _logger;
 
@@ -28,6 +29,7 @@ public sealed class WeatherChecker : IWeatherChecker
         INotificationStateRepository notificationStateRepository,
         INotificationHistoryRepository notificationHistoryRepository,
         IAppStateRepository appStateRepository,
+        IToastNotificationService toastNotificationService,
         IOptions<WeatherOptions> options,
         ILogger<WeatherChecker> logger)
     {
@@ -37,19 +39,20 @@ public sealed class WeatherChecker : IWeatherChecker
         _notificationStateRepository = notificationStateRepository;
         _notificationHistoryRepository = notificationHistoryRepository;
         _appStateRepository = appStateRepository;
+        _toastNotificationService = toastNotificationService;
         _options = options;
         _logger = logger;
     }
 
-    public async Task<RainCheckResult> CheckAsync(CancellationToken cancellationToken)
+    public async Task<RainCheckResult> CheckAsync(CancellationToken cancellationToken, bool showToastNotifications = true)
     {
         try
         {
             var cityCode = await ResolveCityCodeAsync(cancellationToken);
             var hourly = await _weatherApiClient.GetHourlyForecastAsync(cityCode, cancellationToken);
             var result = _rainDetectionService.Detect(hourly, _clock.Now);
-            await PersistRainNotificationStateAsync(cityCode, result.Today, RainDayPerspective.Today, cancellationToken);
-            await PersistRainNotificationStateAsync(cityCode, result.Tomorrow, RainDayPerspective.Tomorrow, cancellationToken);
+            await PersistRainNotificationStateAsync(cityCode, result.Today, RainDayPerspective.Today, showToastNotifications, cancellationToken);
+            await PersistRainNotificationStateAsync(cityCode, result.Tomorrow, RainDayPerspective.Tomorrow, showToastNotifications, cancellationToken);
             await _appStateRepository.SetValueAsync("weather_error_notified", "0", cancellationToken);
             _logger.LogInformation(
                 "Rain check result generated. Today rain: {TodayHasRain}; Tomorrow rain: {TomorrowHasRain}.",
@@ -74,6 +77,10 @@ public sealed class WeatherChecker : IWeatherChecker
                         JsonSerializer.Serialize(new { ex.ErrorKind })),
                     cancellationToken);
                 await _appStateRepository.SetValueAsync("weather_error_notified", "1", cancellationToken);
+                if (showToastNotifications)
+                {
+                    _toastNotificationService.ShowError("天气拉取失败", ex.Message);
+                }
             }
             return NoRainFallback();
         }
@@ -94,6 +101,7 @@ public sealed class WeatherChecker : IWeatherChecker
         string cityCode,
         DailyRainSummary summary,
         RainDayPerspective perspective,
+        bool showToastNotifications,
         CancellationToken cancellationToken)
     {
         if (!summary.HasRain)
@@ -121,16 +129,22 @@ public sealed class WeatherChecker : IWeatherChecker
         var hash = CreateMessageHash(cityCode, summary.Date, perspective, body);
 
         await _notificationStateRepository.MarkNotifiedAsync(cityCode, summary.Date, perspective, hash, cancellationToken);
+        var title = NotificationHistoryFormatter.FormatRainHistoryTitle(summary.Date, _clock.Now);
         await _notificationHistoryRepository.AddAsync(
             new NotificationHistoryEntry(
                 0,
                 _clock.Now,
                 NotificationType.Rain,
                 cityCode,
-                NotificationHistoryFormatter.FormatRainHistoryTitle(summary.Date, _clock.Now),
+                title,
                 body,
                 JsonSerializer.Serialize(new { summary.IntensityLabel, rangeCount = summary.TimeRanges.Count })),
             cancellationToken);
+
+        if (showToastNotifications)
+        {
+            _toastNotificationService.ShowWarning(title, body);
+        }
     }
 
     private static string CreateMessageHash(string cityCode, DateOnly date, RainDayPerspective perspective, string body)

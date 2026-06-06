@@ -6,5 +6,5 @@ namespace WeatherAlert.TrayPopup.Core.Abstractions;
 
 public interface IWeatherChecker
 {
-    Task<RainCheckResult> CheckAsync(CancellationToken cancellationToken);
+    Task<RainCheckResult> CheckAsync(CancellationToken cancellationToken, bool showToastNotifications = true);
 }

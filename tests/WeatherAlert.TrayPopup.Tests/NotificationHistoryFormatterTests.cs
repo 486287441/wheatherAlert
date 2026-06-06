@@ -26,6 +26,24 @@ public sealed class NotificationHistoryFormatterTests
     }
 
     [Fact]
+    public void ToDisplayRow_LegacyRainBodyWithMidnightEnd_NormalizesToTwentyFourHundred()
+    {
+        var createdAt = new DateTimeOffset(2026, 6, 6, 15, 0, 0, TimeSpan.FromHours(8));
+        var entry = new NotificationHistoryEntry(
+            1,
+            createdAt,
+            NotificationType.Rain,
+            "101280101",
+            "降雨提醒 · 今天",
+            "12:00-00:00 有降雨（大雨）",
+            "{}");
+
+        var row = NotificationHistoryFormatter.ToDisplayRow(entry, "广州");
+
+        Assert.Equal("今天 12:00-24:00 有降雨（大雨）", row.Detail);
+    }
+
+    [Fact]
     public void ToDisplayRow_NewRainBody_ShowsReadableDetail()
     {
         var createdAt = new DateTimeOffset(2026, 5, 29, 13, 16, 0, TimeSpan.FromHours(8));

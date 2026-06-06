@@ -15,7 +15,7 @@ public static class NotificationHistoryFormatter
     public static HistoryDisplayRow ToDisplayRow(NotificationHistoryEntry entry, string? cityName)
         => new()
         {
-            NotifiedAt = entry.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm"),
+            NotifiedAt = ClockTimeFormatter.FormatDateTime(entry.CreatedAt),
             Type = FormatType(entry.Type),
             City = string.IsNullOrWhiteSpace(cityName) ? entry.CityCode : cityName,
             Detail = FormatDetail(entry)
@@ -81,18 +81,18 @@ public static class NotificationHistoryFormatter
             var commaIndex = text.LastIndexOf('，');
             if (commaIndex > 0 && Regex.IsMatch(text, @"\d{2}:\d{2}"))
             {
-                var times = text[..commaIndex].Trim();
+                var times = ClockTimeFormatter.NormalizeRangeText(text[..commaIndex].Trim());
                 var intensity = text[(commaIndex + 1)..].Trim();
                 return $"{times} 有降雨（{intensity}）";
             }
 
             if (Regex.IsMatch(text, @"\d{2}:\d{2}"))
             {
-                return $"{text} 有降雨";
+                return ClockTimeFormatter.NormalizeRangeText($"{text} 有降雨");
             }
         }
 
-        return text.Trim();
+        return ClockTimeFormatter.NormalizeRangeText(text.Trim());
     }
 
     private static string? ExtractTargetDayLabel(string title, string body, DateTimeOffset createdAt)

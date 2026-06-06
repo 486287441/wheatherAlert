@@ -35,7 +35,7 @@ public sealed class RainDetectionService : IRainDetectionService
             return new DailyRainSummary(targetDate, false, Array.Empty<RainTimeRange>(), "none");
         }
 
-        var ranges = MergeContiguousRanges(rainyItems);
+        var ranges = BuildRainRanges(dayItems);
         var maxPrecipitation = rainyItems.Max(x => x.PrecipitationMm);
         var maxProbability = rainyItems.Max(x => x.PrecipitationProbability);
 
@@ -48,34 +48,54 @@ public sealed class RainDetectionService : IRainDetectionService
 
     private static bool IsRainSignal(HourlyForecast item)
     {
-        return item.PrecipitationMm > 0 || item.PrecipitationProbability > 0;
+        if (item.PrecipitationMm > 0)
+        {
+            return true;
+        }
+
+        return item.PrecipitationProbability >= 40 && IndicatesRainInText(item.ConditionText);
     }
 
-    private static IReadOnlyList<RainTimeRange> MergeContiguousRanges(IReadOnlyList<HourlyForecast> rainyItems)
+    private static bool IndicatesRainInText(string? conditionText)
     {
-        if (rainyItems.Count == 0)
+        if (string.IsNullOrWhiteSpace(conditionText))
         {
-            return Array.Empty<RainTimeRange>();
+            return false;
         }
 
-        var result = new List<RainTimeRange>();
-        var start = rainyItems[0].ForecastTime;
-        var previous = rainyItems[0].ForecastTime;
+        return conditionText.Contains('雨', StringComparison.Ordinal)
+            || conditionText.Contains("rain", StringComparison.OrdinalIgnoreCase);
+    }
 
-        for (var i = 1; i < rainyItems.Count; i++)
+    private static IReadOnlyList<RainTimeRange> BuildRainRanges(IReadOnlyList<HourlyForecast> dayItems)
+    {
+        var ranges = new List<RainTimeRange>();
+        DateTimeOffset? rangeStart = null;
+        DateTimeOffset? rangeEnd = null;
+
+        foreach (var item in dayItems)
         {
-            var current = rainyItems[i].ForecastTime;
-            if (current - previous > TimeSpan.FromHours(1))
+            if (IsRainSignal(item))
             {
-                result.Add(new RainTimeRange(start, previous.AddHours(1)));
-                start = current;
+                rangeStart ??= item.ForecastTime;
+                rangeEnd = item.ForecastTime.AddHours(1);
+                continue;
             }
 
-            previous = current;
+            if (rangeStart is not null && rangeEnd is not null)
+            {
+                ranges.Add(new RainTimeRange(rangeStart.Value, rangeEnd.Value));
+                rangeStart = null;
+                rangeEnd = null;
+            }
         }
 
-        result.Add(new RainTimeRange(start, previous.AddHours(1)));
-        return result;
+        if (rangeStart is not null && rangeEnd is not null)
+        {
+            ranges.Add(new RainTimeRange(rangeStart.Value, rangeEnd.Value));
+        }
+
+        return ranges;
     }
 
     private static string GetIntensityLabel(double maxPrecipitationMm, int maxProbability)

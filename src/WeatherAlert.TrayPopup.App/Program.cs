@@ -4,6 +4,7 @@ using Serilog;
 using WeatherAlert.TrayPopup.App;
 using WeatherAlert.TrayPopup.App.Configuration;
 using WeatherAlert.TrayPopup.App.Location;
+using WeatherAlert.TrayPopup.App.Notifications;
 using WeatherAlert.TrayPopup.App.Services;
 using WeatherAlert.TrayPopup.App.Tray;
 using WeatherAlert.TrayPopup.Core.Abstractions;
@@ -75,6 +76,7 @@ builder.Services.AddHttpClient<IGeoApiClient, HeWeatherGeoClient>((sp, client) =
         | System.Net.DecompressionMethods.Deflate
         | System.Net.DecompressionMethods.Brotli
 });
+builder.Services.AddSingleton<IToastNotificationService, WindowsToastNotificationService>();
 builder.Services.AddSingleton<IWeatherChecker, WeatherChecker>();
 builder.Services.AddHostedService<SqliteSchemaInitializer>();
 builder.Services.AddHostedService<ConfigValidationHostedService>();

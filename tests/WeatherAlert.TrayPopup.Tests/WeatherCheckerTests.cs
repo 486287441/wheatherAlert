@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using WeatherAlert.TrayPopup.App.Configuration;
+using WeatherAlert.TrayPopup.App.Notifications;
 using WeatherAlert.TrayPopup.App.Services;
 using WeatherAlert.TrayPopup.Core.Abstractions;
 using WeatherAlert.TrayPopup.Core.Models;
@@ -27,6 +28,7 @@ public sealed class WeatherCheckerTests
             new InMemoryNotificationStateRepository(),
             new InMemoryNotificationHistoryRepository(),
             new InMemoryAppStateRepository(),
+            new NullToastNotificationService(),
             Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
             NullLogger<WeatherChecker>.Instance);
 
@@ -34,6 +36,45 @@ public sealed class WeatherCheckerTests
 
         Assert.True(result.Today.HasRain);
         Assert.True(result.Tomorrow.HasRain);
+    }
+
+    [Fact]
+    public async Task CheckAsync_NewRainNotification_ShowsToast()
+    {
+        var toast = new RecordingToastNotificationService();
+        var checker = CreateChecker(
+            new DateTimeOffset(2026, 6, 6, 10, 0, 0, TimeSpan.FromHours(8)),
+            new[]
+            {
+                new HourlyForecast(new DateTimeOffset(2026, 6, 7, 8, 0, 0, TimeSpan.FromHours(8)), 1.2, 70, "Rain")
+            },
+            new InMemoryNotificationStateRepository(),
+            new InMemoryNotificationHistoryRepository(),
+            toast);
+
+        await checker.CheckAsync(CancellationToken.None);
+
+        Assert.Single(toast.Warnings);
+        Assert.Equal("降雨提醒 · 明天", toast.Warnings[0].Title);
+    }
+
+    [Fact]
+    public async Task CheckAsync_SuppressToast_DoesNotShowToast()
+    {
+        var toast = new RecordingToastNotificationService();
+        var checker = CreateChecker(
+            new DateTimeOffset(2026, 6, 6, 10, 0, 0, TimeSpan.FromHours(8)),
+            new[]
+            {
+                new HourlyForecast(new DateTimeOffset(2026, 6, 7, 8, 0, 0, TimeSpan.FromHours(8)), 1.2, 70, "Rain")
+            },
+            new InMemoryNotificationStateRepository(),
+            new InMemoryNotificationHistoryRepository(),
+            toast);
+
+        await checker.CheckAsync(CancellationToken.None, showToastNotifications: false);
+
+        Assert.Empty(toast.Warnings);
     }
 
     [Fact]
@@ -72,6 +113,7 @@ public sealed class WeatherCheckerTests
             new InMemoryNotificationStateRepository(),
             history,
             state,
+            new NullToastNotificationService(),
             Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
             NullLogger<WeatherChecker>.Instance);
 
@@ -105,7 +147,8 @@ public sealed class WeatherCheckerTests
         DateTimeOffset now,
         IReadOnlyList<HourlyForecast> hourly,
         InMemoryNotificationStateRepository state,
-        InMemoryNotificationHistoryRepository history)
+        InMemoryNotificationHistoryRepository history,
+        IToastNotificationService? toastNotificationService = null)
         => new(
             new FixedClock(now),
             new FakeWeatherApiClient(hourly),
@@ -113,8 +156,22 @@ public sealed class WeatherCheckerTests
             state,
             history,
             new InMemoryAppStateRepository(),
+            toastNotificationService ?? new NullToastNotificationService(),
             Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
             NullLogger<WeatherChecker>.Instance);
+
+    private sealed class RecordingToastNotificationService : IToastNotificationService
+    {
+        public List<(string Title, string Body)> Infos { get; } = new();
+        public List<(string Title, string Body)> Warnings { get; } = new();
+        public List<(string Title, string Body)> Errors { get; } = new();
+
+        public void ShowInfo(string title, string body) => Infos.Add((title, body));
+
+        public void ShowWarning(string title, string body) => Warnings.Add((title, body));
+
+        public void ShowError(string title, string body) => Errors.Add((title, body));
+    }
 
     private sealed class InMemoryNotificationStateRepository : INotificationStateRepository
     {

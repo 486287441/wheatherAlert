@@ -15,7 +15,7 @@ public sealed class NoopWeatherChecker : IWeatherChecker
         _logger = logger;
     }
 
-    public Task<RainCheckResult> CheckAsync(CancellationToken cancellationToken)
+    public Task<RainCheckResult> CheckAsync(CancellationToken cancellationToken, bool showToastNotifications = true)
     {
         _logger.LogInformation("No-op weather checker executed at {Now}.", _clock.Now);
         return Task.FromResult(new RainCheckResult(

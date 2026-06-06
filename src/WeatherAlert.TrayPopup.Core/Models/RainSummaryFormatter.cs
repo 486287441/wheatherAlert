@@ -24,7 +24,7 @@ public static class RainSummaryFormatter
     }
 
     public static string FormatTimeRanges(IReadOnlyList<RainTimeRange> timeRanges)
-        => string.Join("、", timeRanges.Select(r => $"{r.Start:HH:mm}-{r.End:HH:mm}"));
+        => ClockTimeFormatter.FormatTimeRanges(timeRanges);
 
     public static string FormatIntensity(string intensityLabel) => intensityLabel switch
     {

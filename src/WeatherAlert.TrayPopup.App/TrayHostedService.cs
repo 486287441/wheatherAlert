@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using WeatherAlert.TrayPopup.App.Configuration;
+using WeatherAlert.TrayPopup.App.Notifications;
 using WeatherAlert.TrayPopup.App.Tray;
 using WeatherAlert.TrayPopup.Core;
 using WeatherAlert.TrayPopup.Core.Abstractions;
@@ -20,6 +21,7 @@ public sealed class TrayHostedService : IHostedService, IDisposable
     private readonly ILogger<TrayHostedService> _logger;
     private readonly WeatherOptions _weatherOptions;
     private readonly TrayIconSet _trayIconSet;
+    private readonly IToastNotificationService _toastNotificationService;
 
     private Thread? _uiThread;
     private NotifyIcon? _notifyIcon;
@@ -31,13 +33,15 @@ public sealed class TrayHostedService : IHostedService, IDisposable
         IHostApplicationLifetime applicationLifetime,
         ILogger<TrayHostedService> logger,
         IOptions<WeatherOptions> weatherOptions,
-        TrayIconSet trayIconSet)
+        TrayIconSet trayIconSet,
+        IToastNotificationService toastNotificationService)
     {
         _serviceProvider = serviceProvider;
         _applicationLifetime = applicationLifetime;
         _logger = logger;
         _weatherOptions = weatherOptions.Value;
         _trayIconSet = trayIconSet;
+        _toastNotificationService = toastNotificationService;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -126,37 +130,31 @@ public sealed class TrayHostedService : IHostedService, IDisposable
         await ShowManualCheckNotificationsAsync(result);
     }
 
-    private async Task ShowManualCheckNotificationsAsync(RainCheckResult result)
+    private Task ShowManualCheckNotificationsAsync(RainCheckResult result)
     {
-        if (_notifyIcon is null)
-        {
-            return;
-        }
-
         if (!result.HasAnyRain)
         {
-            _notifyIcon.ShowBalloonTip(4000, "WeatherAlert", "今天和明天均无降雨。", ToolTipIcon.Info);
-            return;
+            _toastNotificationService.ShowInfo("WeatherAlert", "今天和明天均无降雨。");
+            return Task.CompletedTask;
         }
 
-        ShowDayRainBalloon("今天", result.Today);
-        await Task.Delay(4000);
-        ShowDayRainBalloon("明天", result.Tomorrow);
+        ShowDayRainToast("今天", result.Today);
+        ShowDayRainToast("明天", result.Tomorrow);
+        return Task.CompletedTask;
     }
 
-    private void ShowDayRainBalloon(string dayLabel, DailyRainSummary summary)
+    private void ShowDayRainToast(string dayLabel, DailyRainSummary summary)
     {
-        if (_notifyIcon is null)
+        var title = $"降雨提醒 · {dayLabel}";
+        var body = RainSummaryFormatter.FormatBalloonBody(summary);
+        if (summary.HasRain)
         {
-            return;
+            _toastNotificationService.ShowWarning(title, body);
         }
-
-        var icon = summary.HasRain ? ToolTipIcon.Warning : ToolTipIcon.Info;
-        _notifyIcon.ShowBalloonTip(
-            5000,
-            $"降雨提醒 · {dayLabel}",
-            RainSummaryFormatter.FormatBalloonBody(summary),
-            icon);
+        else
+        {
+            _toastNotificationService.ShowInfo(title, body);
+        }
     }
 
     private async Task<RainCheckResult> RefreshTrayIconAsync()
@@ -165,7 +163,7 @@ public sealed class TrayHostedService : IHostedService, IDisposable
         {
             using var scope = _serviceProvider.CreateScope();
             var checker = scope.ServiceProvider.GetRequiredService<IWeatherChecker>();
-            var result = await checker.CheckAsync(CancellationToken.None);
+            var result = await checker.CheckAsync(CancellationToken.None, showToastNotifications: false);
             ApplyTrayIconByRain(result);
             return result;
         }
@@ -207,7 +205,7 @@ public sealed class TrayHostedService : IHostedService, IDisposable
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to open history window.");
-                _notifyIcon?.ShowBalloonTip(3000, "WeatherAlert", "打开历史通知失败，请查看日志。", ToolTipIcon.Error);
+                _toastNotificationService.ShowError("WeatherAlert", "打开历史通知失败，请查看日志。");
             }
         });
     }
@@ -262,17 +260,13 @@ public sealed class TrayHostedService : IHostedService, IDisposable
             var displayName = selectedName
                                 ?? cityCatalog.FindById(selectedCode)?.DisplayName
                                 ?? selectedCode;
-            _notifyIcon?.ShowBalloonTip(
-                3000,
-                "WeatherAlert",
-                $"城市已切换为 {displayName}",
-                ToolTipIcon.Info);
+            _toastNotificationService.ShowInfo("WeatherAlert", $"城市已切换为 {displayName}");
             await RefreshTrayIconAsync();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to open city dialog.");
-            _notifyIcon?.ShowBalloonTip(3000, "WeatherAlert", "切换城市失败，请查看日志。", ToolTipIcon.Error);
+            _toastNotificationService.ShowError("WeatherAlert", "切换城市失败，请查看日志。");
         }
     }
 
