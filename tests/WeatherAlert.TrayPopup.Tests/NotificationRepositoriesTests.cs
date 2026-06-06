@@ -9,7 +9,7 @@ namespace WeatherAlert.TrayPopup.Tests;
 public sealed class NotificationRepositoriesTests
 {
     [Fact]
-    public async Task NotificationStateRepository_SameCityAndDate_IsDeduplicated()
+    public async Task NotificationStateRepository_SameCityDateAndPerspective_IsDeduplicated()
     {
         var dbPath = CreateTempDbPath();
         var factory = await CreateInitializedFactoryAsync(dbPath);
@@ -17,18 +17,70 @@ public sealed class NotificationRepositoriesTests
 
         var city = "101010100";
         var date = new DateOnly(2026, 5, 28);
-        await repository.MarkNotifiedAsync(city, date, "hash-1", CancellationToken.None);
-        await repository.MarkNotifiedAsync(city, date, "hash-2", CancellationToken.None);
+        await repository.MarkNotifiedAsync(city, date, RainDayPerspective.Tomorrow, "hash-1", CancellationToken.None);
+        await repository.MarkNotifiedAsync(city, date, RainDayPerspective.Tomorrow, "hash-2", CancellationToken.None);
 
-        var exists = await repository.HasNotifiedAsync(city, date, CancellationToken.None);
+        var exists = await repository.HasNotifiedAsync(city, date, RainDayPerspective.Tomorrow, CancellationToken.None);
 
         Assert.True(exists);
 
         // Simulate restart by recreating factory/repository with same sqlite path.
         var restartedFactory = await CreateInitializedFactoryAsync(dbPath);
         var restartedRepository = new NotificationStateRepository(restartedFactory);
-        var existsAfterRestart = await restartedRepository.HasNotifiedAsync(city, date, CancellationToken.None);
+        var existsAfterRestart = await restartedRepository.HasNotifiedAsync(
+            city,
+            date,
+            RainDayPerspective.Tomorrow,
+            CancellationToken.None);
         Assert.True(existsAfterRestart);
+    }
+
+    [Fact]
+    public async Task NotificationStateRepository_TomorrowThenToday_AllowsSecondNotification()
+    {
+        var dbPath = CreateTempDbPath();
+        var factory = await CreateInitializedFactoryAsync(dbPath);
+        var repository = new NotificationStateRepository(factory);
+
+        var city = "101010100";
+        var date = new DateOnly(2026, 6, 7);
+        await repository.MarkNotifiedAsync(city, date, RainDayPerspective.Tomorrow, "hash-tomorrow", CancellationToken.None);
+
+        var tomorrowExists = await repository.HasNotifiedAsync(city, date, RainDayPerspective.Tomorrow, CancellationToken.None);
+        var todayExists = await repository.HasNotifiedAsync(city, date, RainDayPerspective.Today, CancellationToken.None);
+
+        Assert.True(tomorrowExists);
+        Assert.False(todayExists);
+    }
+
+    [Fact]
+    public async Task NotificationStateRepository_LegacyTomorrowState_BlocksTomorrowOnly()
+    {
+        var dbPath = CreateTempDbPath();
+        var factory = await CreateInitializedFactoryAsync(dbPath);
+        var repository = new NotificationStateRepository(factory);
+
+        var city = "101010100";
+        var date = new DateOnly(2026, 6, 7);
+        await repository.MarkNotifiedAsync(city, date, RainDayPerspective.Tomorrow, "legacy-hash", CancellationToken.None);
+
+        await using var connection = factory.CreateConnection();
+        await connection.OpenAsync(CancellationToken.None);
+        await using var update = connection.CreateCommand();
+        update.CommandText = """
+            UPDATE rain_notification_state
+            SET target_date = $legacy_date
+            WHERE city_code = $city_code;
+            """;
+        update.Parameters.AddWithValue("$legacy_date", RainNotificationStateKey.FormatLegacy(date));
+        update.Parameters.AddWithValue("$city_code", city);
+        await update.ExecuteNonQueryAsync(CancellationToken.None);
+
+        var tomorrowExists = await repository.HasNotifiedAsync(city, date, RainDayPerspective.Tomorrow, CancellationToken.None);
+        var todayExists = await repository.HasNotifiedAsync(city, date, RainDayPerspective.Today, CancellationToken.None);
+
+        Assert.True(tomorrowExists);
+        Assert.False(todayExists);
     }
 
     [Fact]

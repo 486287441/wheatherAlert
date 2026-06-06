@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="���">
+  <rect width="960" height="540" fill="#141318"/>
+  <rect x="180" y="60" width="600" height="420" rx="10" fill="#faf9f5" stroke="#d8d5c8"/>
+  <text x="220" y="110" fill="#141413" font-family="Georgia, serif" font-size="26" font-weight="500">��</text>
+  <text x="220" y="150" fill="#6b6a64" font-family="Segoe UI, sans-serif" font-size="14">SQLite E � WPF ��O�</text>
+  <line x1="200" y1="170" x2="760" y2="170" stroke="#e8e6dc"/>
+  <text x="220" y="210" fill="#1B365D" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600">2026-05-29 08:00</text>
+  <text x="220" y="236" fill="#141413" font-family="Segoe UI, sans-serif" font-size="15">�	� � �</text>
+  <text x="220" y="280" fill="#1B365D" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600">2026-05-28 14:12</text>
+  <text x="220" y="306" fill="#141413" font-family="Segoe UI, sans-serif" font-size="15">)��1% � �U�{�</text>
+</svg>

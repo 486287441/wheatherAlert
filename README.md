@@ -64,6 +64,21 @@ dotnet run --project src/WeatherAlert.TrayPopup.App
 dotnet run --project src/WeatherAlert.TrayPopup.App -- --check-now
 ```
 
+## 开机自启
+
+在用户登录 Windows 后自动启动托盘程序（写入当前用户的「启动」文件夹，无需管理员权限）。
+
+| 方式 | 命令 |
+|------|------|
+| 资源管理器 | 双击 `install-autostart.bat` |
+| PowerShell | `.\scripts\install-autostart.ps1` |
+
+取消自启：双击 `uninstall-autostart.bat`，或运行 `.\scripts\uninstall-autostart.ps1`。
+
+安装时会自动编译 Release 版本（若尚未编译），快捷方式直接指向 `WeatherAlert.TrayPopup.App.exe`，并设置正确的工作目录，以便加载 `appsettings` 与 `data/`。
+
+也可在 **设置 → 应用 → 启动** 中查看或关闭「WeatherAlert」项。
+
 ## 测试
 
 ```powershell
@@ -85,6 +100,8 @@ dotnet test WeatherAlert.TrayPopup.sln
 | `src/WeatherAlert.TrayPopup.Infrastructure` | SQLite、和风 API 客户端 |
 | `src/WeatherAlert.TrayPopup.Wpf` | 历史/城市选择等 WPF 窗口 |
 | `tests/WeatherAlert.TrayPopup.Tests` | 单元测试 |
+| `scripts/install-autostart.ps1` | 添加开机自启 |
+| `scripts/uninstall-autostart.ps1` | 移除开机自启 |
 | `plan/` | 模块拆分与验收记录 |
 
 ## 日志与数据

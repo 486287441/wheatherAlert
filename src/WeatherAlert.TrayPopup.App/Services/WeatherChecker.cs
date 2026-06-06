@@ -48,8 +48,8 @@ public sealed class WeatherChecker : IWeatherChecker
             var cityCode = await ResolveCityCodeAsync(cancellationToken);
             var hourly = await _weatherApiClient.GetHourlyForecastAsync(cityCode, cancellationToken);
             var result = _rainDetectionService.Detect(hourly, _clock.Now);
-            await PersistRainNotificationStateAsync(cityCode, result.Today, cancellationToken);
-            await PersistRainNotificationStateAsync(cityCode, result.Tomorrow, cancellationToken);
+            await PersistRainNotificationStateAsync(cityCode, result.Today, RainDayPerspective.Today, cancellationToken);
+            await PersistRainNotificationStateAsync(cityCode, result.Tomorrow, RainDayPerspective.Tomorrow, cancellationToken);
             await _appStateRepository.SetValueAsync("weather_error_notified", "0", cancellationToken);
             _logger.LogInformation(
                 "Rain check result generated. Today rain: {TodayHasRain}; Tomorrow rain: {TomorrowHasRain}.",
@@ -93,6 +93,7 @@ public sealed class WeatherChecker : IWeatherChecker
     private async Task PersistRainNotificationStateAsync(
         string cityCode,
         DailyRainSummary summary,
+        RainDayPerspective perspective,
         CancellationToken cancellationToken)
     {
         if (!summary.HasRain)
@@ -100,18 +101,26 @@ public sealed class WeatherChecker : IWeatherChecker
             return;
         }
 
-        var alreadyNotified = await _notificationStateRepository.HasNotifiedAsync(cityCode, summary.Date, cancellationToken);
+        var alreadyNotified = await _notificationStateRepository.HasNotifiedAsync(
+            cityCode,
+            summary.Date,
+            perspective,
+            cancellationToken);
         if (alreadyNotified)
         {
-            _logger.LogInformation("Rain notification skipped because state already exists. City: {City}, Date: {Date}.", cityCode, summary.Date);
+            _logger.LogInformation(
+                "Rain notification skipped because state already exists. City: {City}, Date: {Date}, Perspective: {Perspective}.",
+                cityCode,
+                summary.Date,
+                perspective);
             return;
         }
 
         var periodText = RainSummaryFormatter.FormatTimeRanges(summary.TimeRanges);
         var body = $"{periodText} 有降雨（{RainSummaryFormatter.FormatIntensity(summary.IntensityLabel)}）";
-        var hash = CreateMessageHash(cityCode, summary.Date, body);
+        var hash = CreateMessageHash(cityCode, summary.Date, perspective, body);
 
-        await _notificationStateRepository.MarkNotifiedAsync(cityCode, summary.Date, hash, cancellationToken);
+        await _notificationStateRepository.MarkNotifiedAsync(cityCode, summary.Date, perspective, hash, cancellationToken);
         await _notificationHistoryRepository.AddAsync(
             new NotificationHistoryEntry(
                 0,
@@ -124,9 +133,9 @@ public sealed class WeatherChecker : IWeatherChecker
             cancellationToken);
     }
 
-    private static string CreateMessageHash(string cityCode, DateOnly date, string body)
+    private static string CreateMessageHash(string cityCode, DateOnly date, RainDayPerspective perspective, string body)
     {
-        var plainText = $"{cityCode}|{date:yyyy-MM-dd}|{body}";
+        var plainText = $"{cityCode}|{date:yyyy-MM-dd}|{perspective}|{body}";
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(plainText));
         return Convert.ToHexString(bytes);
     }

@@ -37,6 +37,29 @@ public sealed class WeatherCheckerTests
     }
 
     [Fact]
+    public async Task CheckAsync_TomorrowRainThenSameDayToday_RaisesBothNotifications()
+    {
+        var history = new InMemoryNotificationHistoryRepository();
+        var state = new InMemoryNotificationStateRepository();
+        var hourly = new[]
+        {
+            new HourlyForecast(new DateTimeOffset(2026, 6, 7, 8, 0, 0, TimeSpan.FromHours(8)), 1.2, 70, "Rain")
+        };
+
+        var dayBefore = new DateTimeOffset(2026, 6, 6, 10, 0, 0, TimeSpan.FromHours(8));
+        var checkerDayBefore = CreateChecker(dayBefore, hourly, state, history);
+        await checkerDayBefore.CheckAsync(CancellationToken.None);
+
+        var rainDay = new DateTimeOffset(2026, 6, 7, 8, 0, 0, TimeSpan.FromHours(8));
+        var checkerRainDay = CreateChecker(rainDay, hourly, state, history);
+        await checkerRainDay.CheckAsync(CancellationToken.None);
+
+        Assert.Equal(2, history.Count);
+        Assert.Equal("降雨提醒 · 明天", history.Entries[0].Title);
+        Assert.Equal("降雨提醒 · 今天", history.Entries[1].Title);
+    }
+
+    [Fact]
     public async Task CheckAsync_ConsecutiveApiFailures_WriteErrorHistoryOnlyOnce()
     {
         var now = new DateTimeOffset(2026, 5, 28, 10, 0, 0, TimeSpan.FromHours(8));
@@ -78,26 +101,72 @@ public sealed class WeatherCheckerTests
             => Task.FromResult(_data);
     }
 
+    private static WeatherChecker CreateChecker(
+        DateTimeOffset now,
+        IReadOnlyList<HourlyForecast> hourly,
+        InMemoryNotificationStateRepository state,
+        InMemoryNotificationHistoryRepository history)
+        => new(
+            new FixedClock(now),
+            new FakeWeatherApiClient(hourly),
+            new RainDetectionService(),
+            state,
+            history,
+            new InMemoryAppStateRepository(),
+            Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
+            NullLogger<WeatherChecker>.Instance);
+
     private sealed class InMemoryNotificationStateRepository : INotificationStateRepository
     {
         private readonly HashSet<string> _states = new();
 
-        public Task<bool> HasNotifiedAsync(string cityCode, DateOnly targetDate, CancellationToken cancellationToken)
-            => Task.FromResult(_states.Contains($"{cityCode}|{targetDate:yyyy-MM-dd}"));
-
-        public Task MarkNotifiedAsync(string cityCode, DateOnly targetDate, string messageHash, CancellationToken cancellationToken)
+        public Task<bool> HasNotifiedAsync(
+            string cityCode,
+            DateOnly targetDate,
+            RainDayPerspective perspective,
+            CancellationToken cancellationToken)
         {
-            _states.Add($"{cityCode}|{targetDate:yyyy-MM-dd}");
+            var stateKey = RainNotificationStateKey.Format(targetDate, perspective);
+            if (_states.Contains($"{cityCode}|{stateKey}"))
+            {
+                return Task.FromResult(true);
+            }
+
+            if (perspective == RainDayPerspective.Tomorrow
+                && _states.Contains($"{cityCode}|{RainNotificationStateKey.FormatLegacy(targetDate)}"))
+            {
+                return Task.FromResult(true);
+            }
+
+            return Task.FromResult(false);
+        }
+
+        public Task MarkNotifiedAsync(
+            string cityCode,
+            DateOnly targetDate,
+            RainDayPerspective perspective,
+            string messageHash,
+            CancellationToken cancellationToken)
+        {
+            _states.Add($"{cityCode}|{RainNotificationStateKey.Format(targetDate, perspective)}");
             return Task.CompletedTask;
         }
     }
 
     private sealed class InMemoryNotificationHistoryRepository : INotificationHistoryRepository
     {
-        public Task AddAsync(NotificationHistoryEntry entry, CancellationToken cancellationToken) => Task.CompletedTask;
+        public List<NotificationHistoryEntry> Entries { get; } = new();
+
+        public int Count => Entries.Count;
+
+        public Task AddAsync(NotificationHistoryEntry entry, CancellationToken cancellationToken)
+        {
+            Entries.Add(entry);
+            return Task.CompletedTask;
+        }
 
         public Task<IReadOnlyList<NotificationHistoryEntry>> GetRecentAsync(int limit, CancellationToken cancellationToken)
-            => Task.FromResult<IReadOnlyList<NotificationHistoryEntry>>(Array.Empty<NotificationHistoryEntry>());
+            => Task.FromResult<IReadOnlyList<NotificationHistoryEntry>>(Entries);
     }
 
     private sealed class InMemoryAppStateRepository : IAppStateRepository

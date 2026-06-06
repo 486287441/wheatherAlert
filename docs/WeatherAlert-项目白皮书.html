@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<!-- ==================================================================
+     LONG DOCUMENT TEMPLATE · parchment design system
+     多页 A4 白皮书/技术报告/年度总结
+     结构：封面 -> 目录 -> 执行摘要 -> 正文章节 -> 附录
+     ================================================================== -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>WeatherAlert 托盘降雨提醒 · 项目白皮书</title>
+<meta name="author" content="WeatherAlert 项目">
+<meta name="description" content="Windows 托盘应用 WeatherAlert 的产品定位、分层架构、降雨检测与通知机制、配置部署及演进路线。">
+<meta name="keywords" content="WeatherAlert,托盘,降雨提醒,和风天气,WPF,.NET">
+<meta name="generator" content="Kami">
+<style>
+    /* BEGIN KAMI-FONTS */
+  /* Kami CN print templates · copy into <style> (keep in sync via scripts/sync-cn-font-blocks.py)
+     Paths: ../fonts/ (repo build) · fonts/ (standalone export) · jsDelivr CDN
+     Latin → Charter/Georgia · CJK → 仓耳今楷 · code → JetBrains Mono */
+  @font-face {
+    font-family: "KamiLatin";
+    src: local("Charter"),
+       local("Charter Regular"),
+       local("Georgia"),
+       local("Palatino Linotype"),
+       local("Times New Roman");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+2000-206F, U+2070-2079, U+2080-2089, U+20AC, U+2122, U+2190-2193, U+2212;
+  }
+
+  @font-face {
+    font-family: "KamiLatin";
+    src: local("Charter Bold"),
+       local("Charter"),
+       local("Georgia Bold"),
+       local("Georgia");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+                   U+2000-206F, U+2070-2079, U+2080-2089, U+20AC, U+2122, U+2190-2193, U+2212;
+  }
+
+  @font-face {
+    font-family: "KamiSerif";
+    src: local("仓耳今楷02 W04"),
+       local("TsangerJinKai02"),
+       url("../fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("fonts/TsangerJinKai02-W04.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W04.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+3000-303F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  }
+
+  @font-face {
+    font-family: "KamiSerif";
+    src: local("仓耳今楷02 W05"),
+       local("TsangerJinKai02"),
+       url("../fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("fonts/TsangerJinKai02-W05.ttf") format("truetype"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/TsangerJinKai02-W05.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+    unicode-range: U+3000-303F, U+3400-4DBF, U+4E00-9FFF, U+F900-FAFF, U+FF00-FFEF;
+  }
+
+  @font-face {
+    font-family: "KamiMono";
+    src: local("JetBrains Mono"),
+       local("JetBrains Mono Regular"),
+       local("Consolas"),
+       local("Cascadia Mono"),
+       url("../fonts/JetBrainsMono.woff2") format("woff2"),
+       url("fonts/JetBrainsMono.woff2") format("woff2"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/JetBrainsMono.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "KamiMono";
+    src: local("JetBrains Mono Medium"),
+       local("JetBrains Mono"),
+       local("Consolas"),
+       url("../fonts/JetBrainsMono.woff2") format("woff2"),
+       url("fonts/JetBrainsMono.woff2") format("woff2"),
+       url("https://cdn.jsdelivr.net/gh/tw93/Kami@main/assets/fonts/JetBrainsMono.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+  }
+/* END KAMI-FONTS */
+
+
+
+
+
+@page {
+    size: A4;
+    margin: 20mm 22mm 22mm 22mm;
+    background: #f5f4ed;
+
+    @top-right {
+      content: string(section-title);
+      font-family: var(--serif);
+      font-size: 8pt;
+      color: #6b6a64;
+    }
+
+    @bottom-center {
+      content: counter(page) "  ·  WeatherAlert 项目白皮书";
+      font-family: var(--serif);
+      font-size: 9pt;
+      color: #6b6a64;
+    }
+  }
+
+  @page:first {
+    @top-right { content: ""; }
+    @bottom-center { content: ""; }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --parchment: #f5f4ed;
+    --ivory:     #faf9f5;
+    --near-black:#141413;
+    --dark-warm: #3d3d3a;
+    --olive:     #504e49;
+    --stone:     #6b6a64;
+    --brand:     #1B365D;
+    --border:    #e8e6dc;
+    --border-soft:#e5e3d8;
+    --tag-bg:    #E4ECF5;
+    --serif: "KamiLatin", "KamiSerif", Charter, "仓耳今楷02 W04", "TsangerJinKai02",
+             "Source Han Serif SC", "Noto Serif CJK SC", Georgia, "Songti SC", serif;
+    --sans: var(--serif);
+        --mono: "KamiMono", "JetBrains Mono", Consolas, "Cascadia Mono", "SF Mono", "Fira Code", monospace;
+
+    --rhythm-module:  14pt;
+    --rhythm-section: 18pt;
+  }
+
+  html, body { background: var(--parchment); }
+
+  @media screen {
+    body { max-width: 210mm; margin: 0 auto; padding: 20mm 22mm 22mm 22mm; }
+  }
+
+  body {
+    color: var(--near-black);
+    font-family: var(--serif);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    letter-spacing: 0.3pt;
+    widows: 3;
+    orphans: 3;
+  }
+
+  .sans {
+    font-family: var(--sans);
+  }
+
+  /* ========== COVER ========== */
+  .cover {
+    min-height: 240mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40mm 0 0 0;
+    break-after: page;
+  }
+  .cover-eyebrow {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 18pt;
+  }
+  .cover-title {
+    font-size: 36pt;
+    font-weight: 500;
+    color: var(--near-black);
+    line-height: 1.15;
+    letter-spacing: 0.3pt;
+    margin-bottom: 16pt;
+  }
+  .cover-sub {
+    font-family: var(--sans);
+    font-size: 14pt;
+    color: var(--olive);
+    line-height: 1.5;
+    max-width: 85%;
+    margin-bottom: 30pt;
+  }
+  .cover-meta {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .cover-meta strong {
+    color: var(--dark-warm);
+    font-weight: 500;
+  }
+
+  /* ========== TOC（目录）========== */
+  .toc { break-after: page; }
+  .toc h2 {
+    font-size: 22pt;
+    font-weight: 500;
+    margin-bottom: var(--rhythm-module);
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6pt 0;
+    border-bottom: 0.3pt dotted var(--border);
+    font-size: 11pt;
+  }
+  .toc-item:last-of-type { border-bottom: none; }
+  .toc-num {
+    color: var(--brand);
+    font-weight: 500;
+    min-width: 30pt;
+  }
+  .toc-title {
+    flex: 1;
+    color: var(--near-black);
+    padding-left: 6pt;
+  }
+  .toc-page {
+    color: var(--stone);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ========== HEADINGS ========== */
+  h1 {
+    font-size: 22pt;
+    font-weight: 500;
+    line-height: 1.2;
+    margin: 0 0 10pt 0;
+    border-left: 2.5pt solid var(--brand);
+    border-radius: 1.5pt;
+    padding-left: 8pt;
+    color: var(--near-black);
+    break-after: avoid;
+  }
+
+  h2 {
+    font-size: 16pt;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 24pt 0 8pt 0;
+    color: var(--near-black);
+    break-after: avoid;
+    string-set: section-title content();
+  }
+
+  h3 {
+    font-size: 13pt;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 18pt 0 6pt 0;
+    color: var(--dark-warm);
+    break-after: avoid;
+  }
+
+  .chapter-num {
+    font-family: var(--sans);
+    font-size: 10pt;
+    color: var(--brand);
+    letter-spacing: 1pt;
+    text-transform: uppercase;
+    margin-bottom: 6pt;
+  }
+
+  /* ========== PARAGRAPHS ========== */
+  p {
+    margin: 0 0 10pt 0;
+    line-height: 1.55;
+    color: var(--near-black);
+    widows: 2;
+    orphans: 2;
+  }
+
+  .lead {
+    font-size: 12pt;
+    line-height: 1.55;
+    color: var(--dark-warm);
+    margin-bottom: var(--rhythm-module);
+  }
+
+  .hl { color: var(--brand); font-weight: 500; }
+  strong { font-weight: 500; }
+
+  /* ========== LISTS ========== */
+  ul, ol {
+    margin: 6pt 0 10pt 0;
+    padding-left: 20pt;
+    line-height: 1.55;
+  }
+  ul li::marker { color: var(--brand); }
+  ol li::marker { color: var(--brand); font-weight: 500; }
+
+  /* ========== QUOTE ========== */
+  blockquote, .quote {
+    border-left: 2pt solid var(--brand);
+    margin: 12pt 0;
+    padding: 4pt 0 4pt 16pt;
+    color: var(--olive);
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  blockquote .cite, .quote .cite {
+    display: block;
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 4pt;
+  }
+
+  /* BEGIN KAMI-CODE */
+  code {
+    font-family: var(--mono), var(--serif), monospace;
+    font-size: 9pt;
+    background: var(--ivory);
+    padding: 1pt 4pt;
+    border-radius: 2pt;
+    color: var(--dark-warm);
+    font-variant-ligatures: none;
+  }
+  pre {
+    font-family: var(--mono), var(--serif), monospace;
+    font-size: 9pt;
+    line-height: 1.5;
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 10pt 0;
+    white-space: pre-wrap;
+    color: var(--near-black);
+    break-inside: avoid;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    font-size: inherit;
+  }
+  /* END KAMI-CODE */
+
+/* ========== TABLE (kami-table) ========== */
+  table, .kami-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 12pt 0;
+    break-inside: avoid;
+  }
+  table th, .kami-table th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--dark-warm);
+    padding: 6pt 8pt;
+    border-bottom: 1pt solid var(--border);
+    background: transparent;
+  }
+  table td, .kami-table td {
+    padding: 5pt 8pt;
+    border-bottom: 0.3pt solid var(--border-soft);
+    vertical-align: top;
+  }
+  table.compact th, .kami-table.compact th { padding: 3pt 6pt; font-size: 8pt; }
+  table.compact td, .kami-table.compact td { padding: 2pt 6pt; font-size: 8pt; line-height: 1.4; }
+  table.financial td:not(:first-child), .kami-table.financial td:not(:first-child) {
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  table.financial th:not(:first-child), .kami-table.financial th:not(:first-child) { text-align: right; }
+  table.striped tbody tr:nth-child(even) td, .kami-table.striped tbody tr:nth-child(even) td {
+    background: var(--ivory);
+  }
+  table .total td, .kami-table .total td {
+    font-weight: 500; border-top: 1pt solid var(--brand); border-bottom: none; color: var(--near-black);
+  }
+
+  /* ========== CALLOUT ========== */
+  .callout {
+    background: var(--ivory);
+    border-left: 2pt solid var(--brand);
+    padding: 10pt 14pt;
+    border-radius: 3pt;
+    margin: 12pt 0;
+    line-height: 1.55;
+    break-inside: avoid;
+  }
+  .callout blockquote,
+  .callout .quote {
+    border-left: none;
+    padding-left: 0;
+    margin: 6pt 0;
+    color: var(--olive);
+  }
+  .callout blockquote:first-child,
+  .callout .quote:first-child { margin-top: 0; }
+  .callout blockquote:last-child,
+  .callout .quote:last-child  { margin-bottom: 0; }
+
+  .takeaway {
+    background: var(--ivory);
+    border-radius: 4pt;
+    padding: 10pt 14pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .takeaway-label {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--brand);
+    letter-spacing: 0.5pt;
+    text-transform: uppercase;
+    margin-bottom: 4pt;
+  }
+
+  /* ========== TAG ========== */
+  .tag {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--brand);
+    font-family: var(--sans);
+    font-size: 9pt;
+    font-weight: 500;
+    padding: 1pt 6pt;
+    border-radius: 3pt;
+    margin-right: 4pt;
+  }
+
+  /* ========== FIGURE ========== */
+  figure {
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    border-radius: 4pt;
+  }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 9pt;
+    color: var(--stone);
+    margin-top: 6pt;
+    text-align: center;
+  }
+
+  /* ========== EXECUTIVE SUMMARY ========== */
+  .exec-summary {
+    background: var(--ivory);
+    border-left: 1.4pt solid var(--brand);
+    border-radius: 6pt;
+    padding: 16pt 20pt;
+    margin: 14pt 0;
+    break-inside: avoid;
+  }
+  .exec-summary h2 {
+    margin-top: 0;
+    font-size: 13pt;
+  }
+
+  /* ========== CHAPTER BREAK ========== */
+  .chapter { break-before: page; }
+</style>
+</head>
+<body>
+
+<!-- ═════════════ COVER ═════════════ -->
+<section class="cover">
+  <div>
+    <div class="cover-eyebrow">技术白皮书 · Windows 桌面</div>
+    <div class="cover-title">WeatherAlert<br>托盘降雨提醒系统</div>
+    <div class="cover-sub">面向开发者与运维者的项目说明：产品能力、分层架构、核心算法、配置方式与模块演进记录。</div>
+  </div>
+  <div class="cover-meta">
+    <strong>WeatherAlert 开源仓库</strong><br>
+    V1.0  ·  2026 年 5 月<br>
+    C# · .NET 10 · WPF · 和风天气 API
+  </div>
+</section>
+
+<!-- ═════════════ 目录 ═════════════ -->
+<section class="toc">
+  <h2>目录</h2>
+  <div class="toc-item">
+    <span class="toc-num">01</span>
+    <span class="toc-title">执行摘要</span>
+    <span class="toc-page">03</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">02</span>
+    <span class="toc-title">产品背景与目标</span>
+    <span class="toc-page">04</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">03</span>
+    <span class="toc-title">系统架构</span>
+    <span class="toc-page">05</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">04</span>
+    <span class="toc-title">核心实现</span>
+    <span class="toc-page">07</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">05</span>
+    <span class="toc-title">使用、配置与运维</span>
+    <span class="toc-page">09</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">06</span>
+    <span class="toc-title">结论与演进</span>
+    <span class="toc-page">10</span>
+  </div>
+  <div class="toc-item">
+    <span class="toc-num">07</span>
+    <span class="toc-title">附录</span>
+    <span class="toc-page">11</span>
+  </div>
+</section>
+
+<!-- ═════════════ Chapter 01：执行摘要 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">01 · Executive Summary</div>
+  <h1>执行摘要</h1>
+
+  <p class="lead">
+    <strong>WeatherAlert</strong> 是一款运行在 Windows 系统托盘上的<span class="hl">降雨提醒</span>应用：按可配置间隔拉取和风天气 24 小时预报，判断「今天」与「明天」是否可能出现降雨，并以托盘图标、气泡通知与本地历史记录三种方式反馈给用户。项目采用四层解决方案结构，核心业务与 UI 解耦，<span class="hl">38 项单元测试</span>全部通过。
+  </p>
+
+  <h2>核心 Takeaways</h2>
+  <ul>
+    <li><strong>轻量常驻</strong>：默认每 60 分钟轮询一次，无前台窗口占用；托盘右键即可完成检查、查历史、换城市。</li>
+    <li><strong>去重通知</strong>：按「城市 + 日期 + 消息摘要哈希」写入 SQLite，同一自然日不重复记入降雨提醒。</li>
+    <li><strong>可定位可选手</strong>：启动时可用 Windows 定位 + 和风 GeoAPI 解析城市；亦支持全国城市目录手动切换。</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="takeaway-label">本文档回答的问题</div>
+    <ol>
+      <li>WeatherAlert 解决什么场景、对外提供哪些能力？</li>
+      <li>代码如何分层、数据如何在托盘检查链路中流动？</li>
+      <li>如何在本机配置 API、运行、排障与扩展？</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ═════════════ Chapter 02：产品背景 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">02 · Product</div>
+  <h1>产品背景与目标</h1>
+
+  <p class="lead">
+    通勤与出行前，用户往往只需要一个简单判断：「今明两天要不要带伞？」手机天气 App 信息过载，而系统通知又容易被淹没。WeatherAlert 把答案收敛到托盘一角。
+  </p>
+
+  <h2>使用场景</h2>
+  <p>典型用户是长期开机的 Windows 办公本用户：应用开机自启后驻留托盘，在降雨来临前数小时通过图标与历史记录获得可回顾的提醒，而不必反复打开完整天气界面。</p>
+
+  <h2>功能一览</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>能力</th>
+        <th>行为说明</th>
+        <th>入口</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>定时检查</td>
+        <td>后台 <code>WeatherWorker</code> 按 <span class="hl">PollingMinutes</span> 拉取 24h 预报并更新托盘图标</td>
+        <td>自动</td>
+      </tr>
+      <tr>
+        <td>立即检查</td>
+        <td>同步执行一次完整检查，并通过气泡展示今/明降雨摘要</td>
+        <td>托盘右键 · 立即检查</td>
+      </tr>
+      <tr>
+        <td>图标状态</td>
+        <td>今或明有雨 → 雨伞图标；否则 → 铃铛图标</td>
+        <td>托盘区视觉</td>
+      </tr>
+      <tr>
+        <td>通知历史</td>
+        <td>降雨提醒与 API 失败记录写入 SQLite，WPF 窗口分页展示</td>
+        <td>托盘右键 · 历史记录</td>
+      </tr>
+      <tr>
+        <td>城市切换</td>
+        <td>全国城市目录分组选择；或启动时 Geo 定位解析</td>
+        <td>托盘右键 · 切换城市</td>
+      </tr>
+      <tr>
+        <td>毛玻璃飞层</td>
+        <td>自绘圆角卡片 + DWM 模糊，点击托盘在屏幕右下角弹出，移开自动收起</td>
+        <td>托盘左键（M03–M05 模块）</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    设计取舍：左键不绑定业务弹窗以外的操作，右键承载全部菜单项；降雨「通知」以历史记录 + 托盘气泡为主，而非 Windows Toast 中心，以降低权限与打扰成本。
+  </div>
+
+  <h2>非目标</h2>
+  <p>当前版本不提供多平台客户端、分钟级雷达、社交分享或账号体系；专注 Windows 10/11 单用户本机场景。</p>
+</section>
+
+<!-- ═════════════ Chapter 03：架构 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">03 · Architecture</div>
+  <h1>系统架构</h1>
+
+  <p class="lead">
+    解决方案 <code>WeatherAlert.TrayPopup.sln</code> 按职责拆为四个项目与一个测试工程，宿主使用 <code>Microsoft.Extensions.Hosting</code> 注册后台服务与依赖注入，UI 与领域逻辑通过接口隔离。
+  </p>
+
+  <h2>项目组成</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>项目</th>
+        <th>职责</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>WeatherAlert.TrayPopup.App</code></td>
+        <td>通用宿主：配置、Serilog、<code>TrayHostedService</code>、<code>WeatherWorker</code>、<code>WeatherChecker</code></td>
+      </tr>
+      <tr>
+        <td><code>WeatherAlert.TrayPopup.Core</code></td>
+        <td>领域模型、仓储接口、<code>RainDetectionService</code>、格式化器</td>
+      </tr>
+      <tr>
+        <td><code>WeatherAlert.TrayPopup.Infrastructure</code></td>
+        <td>SQLite 仓储、和风 HTTP 客户端、中国城市目录、Windows 定位</td>
+      </tr>
+      <tr>
+        <td><code>WeatherAlert.TrayPopup.Wpf</code></td>
+        <td>历史窗口、城市选择对话框、毛玻璃飞层与托盘菜单窗口</td>
+      </tr>
+      <tr>
+        <td><code>WeatherAlert.TrayPopup.Tests</code></td>
+        <td>38 项单元/集成测试，覆盖 M01–M06 模块验收点</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>分层示意</h2>
+  <figure>
+    <svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:100%;">
+      <rect width="100%" height="100%" fill="#f5f4ed"/>
+      <rect x="96" y="40" width="724" height="52" rx="4" fill="#faf9f5" stroke="#141413" stroke-width="1"/>
+      <text x="152" y="62" fill="#141413" font-size="12" font-weight="500" font-family="Georgia, serif">表现层 · WPF 窗口 / 托盘 NotifyIcon / 飞层</text>
+      <text x="152" y="78" fill="#504e49" font-size="9" font-family="monospace">HistoryWindow · CitySelectionDialog · FrostedFlyout</text>
+      <rect x="96" y="100" width="724" height="52" rx="4" fill="#EEF2F7" stroke="#1B365D" stroke-width="1"/>
+      <text x="152" y="122" fill="#1B365D" font-size="12" font-weight="500" font-family="Georgia, serif">业务层 · 降雨检测与通知编排（FOCAL）</text>
+      <text x="152" y="138" fill="#1B365D" font-size="9" font-family="monospace">WeatherChecker · RainDetectionService · CityLocationService</text>
+      <rect x="96" y="160" width="724" height="52" rx="4" fill="#f5f4ed" stroke="#504e49" stroke-width="1"/>
+      <text x="152" y="182" fill="#141413" font-size="12" font-weight="500" font-family="Georgia, serif">数据访问 · 仓储接口实现</text>
+      <text x="152" y="198" fill="#504e49" font-size="9" font-family="monospace">AppState · NotificationState · NotificationHistory</text>
+      <rect x="96" y="220" width="724" height="52" rx="4" fill="#f0efe8" stroke="#6b6a64" stroke-width="1"/>
+      <text x="152" y="242" fill="#141413" font-size="12" font-weight="500" font-family="Georgia, serif">存储 · SQLite（默认 data/weather-alert.db）</text>
+      <rect x="96" y="280" width="724" height="52" rx="4" fill="#eae9e1" stroke="#b8b7b0" stroke-width="1"/>
+      <text x="152" y="302" fill="#141413" font-size="12" font-weight="500" font-family="Georgia, serif">基础设施 · 和风 API · Windows Geolocation · HttpClient</text>
+      <line x1="52" y1="52" x2="52" y2="320" stroke="#504e49" stroke-width="1.2"/>
+      <text x="52" y="190" fill="#504e49" font-size="8" font-family="monospace" text-anchor="middle" transform="rotate(-90 52 190)">REQUEST</text>
+      <line x1="872" y1="320" x2="872" y2="52" stroke="#1B365D" stroke-width="1.4"/>
+      <text x="872" y="190" fill="#1B365D" font-size="8" font-family="monospace" text-anchor="middle" transform="rotate(90 872 190)">RESPONSE</text>
+    </svg>
+    <figcaption>示意重绘 · WeatherAlert 五层架构：业务层集中降雨判断与通知去重，向下依赖仓储与和风 API。</figcaption>
+  </figure>
+
+  <h2>Hosted 服务</h2>
+  <p>应用启动时并行注册以下 <code>IHostedService</code>：</p>
+  <ul>
+    <li><strong>SqliteSchemaInitializer</strong>：确保库表存在</li>
+    <li><strong>ConfigValidationHostedService</strong>：校验 API Key 等必要配置</li>
+    <li><strong>CityLocationBootstrapHostedService</strong>：尝试定位并写入当前城市</li>
+    <li><strong>TrayHostedService</strong>：创建托盘图标、绑定菜单与 WPF 调度</li>
+    <li><strong>WeatherWorker</strong>：定时调用 <code>IWeatherChecker.CheckAsync</code></li>
+  </ul>
+
+  <h2>模块演进（plan/）</h2>
+  <p>托盘 UI 经 M01–M06 分阶段交付：骨架与测试管线 → 屏幕定位 → 飞层状态机 → 毛玻璃窗口 → 托盘集成 → 全业务迁移。截至 2026-05-29，六项模块验收均为通过。</p>
+</section>
+
+<!-- ═════════════ Chapter 04：核心实现 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">04 · Implementation</div>
+  <h1>核心实现</h1>
+
+  <p class="lead">
+    一次完整检查由 <code>WeatherChecker</code> 编排：解析城市 → 拉取 24 小时逐小时预报 → 领域层判定今明降雨 → 按规则持久化状态与历史。
+  </p>
+
+  <h2>检查链路</h2>
+  <pre><code class="language-csharp">// WeatherChecker.CheckAsync 简化流程
+cityCode = AppState.CurrentCityCode ?? DefaultCityCode;
+hourly   = await _weatherApiClient.GetHourlyForecastAsync(cityCode);
+result   = _rainDetectionService.Detect(hourly, _clock.Now);
+await PersistRainNotificationStateAsync(cityCode, result.Today);
+await PersistRainNotificationStateAsync(cityCode, result.Tomorrow);</code></pre>
+
+  <h2>降雨判定（RainDetectionService）</h2>
+  <p>对「今天」「明天」两个 <code>DateOnly</code> 分别过滤本地时区的逐小时条目。单小时满足 <span class="hl">降水量 &gt; 0</span> 或 <span class="hl">降水概率 &gt; 0</span> 即视为降雨信号；相邻降雨小时合并为连续时段（间隔超过 1 小时则切段）。强度标签由当日降雨时段内的最大降水量与最大概率推导：</p>
+  <table>
+    <thead>
+      <tr>
+        <th>标签</th>
+        <th>条件（满足其一）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>heavy</td>
+        <td>降水量 ≥ 10 mm 或 概率 ≥ 80%</td>
+      </tr>
+      <tr>
+        <td>moderate</td>
+        <td>降水量 ≥ 2 mm 或 概率 ≥ 40%</td>
+      </tr>
+      <tr>
+        <td>light</td>
+        <td>其余有雨情况</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>通知去重</h2>
+  <p>仅当 <code>DailyRainSummary.HasRain</code> 为真时写入。仓储先查 <code>HasNotifiedAsync(cityCode, date)</code>；未通知则计算消息体哈希，标记已通知并追加 <code>NotificationHistoryEntry</code>（类型 Rain）。API 连续失败时写入 Error 类型历史，且通过 <code>weather_error_notified</code> 状态键避免刷屏。</p>
+
+  <h2>城市解析</h2>
+  <p><code>CityLocationBootstrapHostedService</code> 在启动阶段调用 <code>IDeviceLocationProvider</code>（Windows 定位）与 <code>IGeoApiClient</code>（和风 Geo v2 city lookup），将解析结果写入 <code>AppStateKeys.CurrentCityCode</code>。用户亦可通过 WPF 对话框从 <code>ChinaCityCatalog</code> 内置的全国城市分组列表中覆盖。</p>
+
+  <blockquote>
+    手动检查（托盘 · 立即检查）会刷新图标并弹出今/明两条气泡；自动轮询仅更新图标与静默历史，不弹气泡，避免后台打扰。
+  </blockquote>
+</section>
+
+<!-- ═════════════ Chapter 05：运维 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">05 · Operations</div>
+  <h1>使用、配置与运维</h1>
+
+  <p class="lead">本机部署无需数据库服务器；仅需 .NET 10 SDK（开发）或已编译的 Release 输出（运行）以及有效的和风 API 凭证。</p>
+
+  <h2>环境要求</h2>
+  <ul>
+    <li>操作系统：Windows 10 / 11</li>
+    <li>运行时：.NET 10（<code>net10.0-windows10.0.19041.0</code>）</li>
+    <li>外部依赖：和风天气 API Key 与专属 API Host</li>
+  </ul>
+
+  <h2>配置 API 密钥</h2>
+  <p>任选其一（勿将真实 Key 提交 Git）：</p>
+  <ol>
+    <li>复制 <code>appsettings.Local.json.example</code> 为 <code>appsettings.Local.json</code> 并填写 <code>ApiKey</code>、<code>ApiBaseUrl</code></li>
+    <li>环境变量：<code>WEATHER_ALERT_Weather__ApiKey</code></li>
+    <li>仅本机调试时修改 <code>appsettings.json</code> 占位符</li>
+  </ol>
+
+  <h2>启动方式</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>场景</th>
+        <th>命令</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>一键启动（Release 编译）</td>
+        <td>双击 <code>start.bat</code> 或 <code>.\start.ps1</code></td>
+      </tr>
+      <tr>
+        <td>开发调试</td>
+        <td><code>dotnet run --project src/WeatherAlert.TrayPopup.App</code></td>
+      </tr>
+      <tr>
+        <td>立即检查一次</td>
+        <td>附加参数 <code>--check-now</code></td>
+      </tr>
+      <tr>
+        <td>运行测试</td>
+        <td><code>dotnet test WeatherAlert.TrayPopup.sln</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>本地数据与日志</h2>
+  <ul>
+    <li>数据库：<code>data/weather-alert.db</code>（.gitignore，含通知状态与历史）</li>
+    <li>日志：<code>logs/weather-alert-*.log</code>，Serilog 按日滚动，默认保留 14 天</li>
+    <li>轮询间隔：<code>Weather:PollingMinutes</code>，代码侧最小钳制为 1 分钟</li>
+  </ul>
+
+  <h2>排障提示</h2>
+  <p>托盘仍为铃铛但预期有雨：先「立即检查」看气泡，再查历史是否已有同日记录（去重导致不再写入）。API 失败：查看日志与历史中 Error 条目，确认 Host 与 Key 是否匹配控制台项目。</p>
+</section>
+
+<!-- ═════════════ Chapter 06：结论 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">06 · Roadmap</div>
+  <h1>结论与演进</h1>
+
+  <p class="lead">WeatherAlert 以最小表面完成「今明降雨」这一单一命题；架构上已为扩展留出清晰边界。</p>
+
+  <h2>核心结论</h2>
+  <ol>
+    <li>四层拆分使 Core 可独立测试，Infra 可替换天气供应商实现。</li>
+    <li>通知去重 + 历史记录兼顾「不骚扰」与「可追责」。</li>
+    <li>M01–M06 渐进式交付降低了托盘 + WPF 飞层这一高风险 UI 的返工成本。</li>
+  </ol>
+
+  <h2>可考虑的后续方向</h2>
+  <ul>
+    <li>开机自启安装项与静默升级通道</li>
+    <li>可配置的降雨阈值与用户自定义强度规则</li>
+    <li>Windows Toast 与「勿扰时段」策略</li>
+    <li>多城市监视列表（当前为单城市状态）</li>
+  </ul>
+
+  <div class="takeaway">
+    <div class="takeaway-label">快速上手</div>
+    克隆仓库 → 配置 <code>appsettings.Local.json</code> → 运行 <code>.\start.ps1</code> → 托盘右键「立即检查」验证链路 → 执行 <code>dotnet test</code> 确认环境一致。
+  </div>
+</section>
+
+<!-- ═════════════ Chapter 07：附录 ═════════════ -->
+<section class="chapter">
+  <div class="chapter-num">07 · Appendix</div>
+  <h1>附录</h1>
+
+  <h2>A. 参考资料</h2>
+  <ul>
+    <li>和风天气开发文档：<a href="https://dev.qweather.com/">https://dev.qweather.com/</a></li>
+    <li>仓库 README：<code>README.md</code></li>
+    <li>模块计划：<code>plan/README.md</code> 及各 M0x 文档</li>
+  </ul>
+
+  <h2>B. 术语表</h2>
+  <p><strong>和风天气（QWeather）</strong>：第三方气象数据服务；本项目使用其 24 小时预报与 Geo 城市查询接口。</p>
+  <p><strong>CityCode</strong>：和风城市 ID，如北京默认 <code>101010100</code>，持久化于 AppState。</p>
+  <p><strong>飞层（Flyout）</strong>：点击托盘弹出的无边框 WPF 浮层，带可见性状态机与屏幕边缘定位。</p>
+
+  <h2>C. 文档信息</h2>
+  <p>本白皮书由项目 README、plan 验收记录与源代码梳理生成，版式采用 Kami long-doc 模板。页码以 PDF 导出为准。</p>
+</section>
+
+</body>
+</html>
