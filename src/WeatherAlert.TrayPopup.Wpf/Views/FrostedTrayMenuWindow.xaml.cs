@@ -7,6 +7,7 @@ public enum TrayMenuAction
 {
     CheckNow,
     History,
+    HourlyForecast,
     ChangeCity,
     Exit
 }
@@ -31,6 +32,8 @@ public partial class FrostedTrayMenuWindow : Window
     private void OnCheckNowClick(object sender, RoutedEventArgs e) => RaiseAction(TrayMenuAction.CheckNow);
 
     private void OnHistoryClick(object sender, RoutedEventArgs e) => RaiseAction(TrayMenuAction.History);
+
+    private void OnHourlyForecastClick(object sender, RoutedEventArgs e) => RaiseAction(TrayMenuAction.HourlyForecast);
 
     private void OnChangeCityClick(object sender, RoutedEventArgs e) => RaiseAction(TrayMenuAction.ChangeCity);
 

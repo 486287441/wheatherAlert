@@ -27,6 +27,7 @@ public sealed class WeatherCheckerTests
             new RainDetectionService(),
             new InMemoryNotificationStateRepository(),
             new InMemoryNotificationHistoryRepository(),
+            new InMemoryHourlyForecastCacheRepository(),
             new InMemoryAppStateRepository(),
             new NullToastNotificationService(),
             Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
@@ -112,6 +113,7 @@ public sealed class WeatherCheckerTests
             new RainDetectionService(),
             new InMemoryNotificationStateRepository(),
             history,
+            new InMemoryHourlyForecastCacheRepository(),
             state,
             new NullToastNotificationService(),
             Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
@@ -155,6 +157,7 @@ public sealed class WeatherCheckerTests
             new RainDetectionService(),
             state,
             history,
+            new InMemoryHourlyForecastCacheRepository(),
             new InMemoryAppStateRepository(),
             toastNotificationService ?? new NullToastNotificationService(),
             Options.Create(new WeatherOptions { DefaultCityCode = "101010100" }),
@@ -238,6 +241,41 @@ public sealed class WeatherCheckerTests
             _store[key] = value;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class InMemoryHourlyForecastCacheRepository : IHourlyForecastCacheRepository
+    {
+        private readonly List<(string CityCode, HourlyForecast Forecast)> _items = new();
+
+        public Task UpsertAsync(
+            string cityCode,
+            IReadOnlyList<HourlyForecast> forecasts,
+            DateTimeOffset capturedAt,
+            CancellationToken cancellationToken)
+        {
+            foreach (var forecast in forecasts)
+            {
+                _items.RemoveAll(item =>
+                    item.CityCode == cityCode && item.Forecast.ForecastTime == forecast.ForecastTime);
+                _items.Add((cityCode, forecast));
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<HourlyForecast>> GetRangeAsync(
+            string cityCode,
+            DateTimeOffset startInclusive,
+            DateTimeOffset endExclusive,
+            CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<HourlyForecast>>(_items
+                .Where(item =>
+                    item.CityCode == cityCode
+                    && item.Forecast.ForecastTime >= startInclusive
+                    && item.Forecast.ForecastTime < endExclusive)
+                .Select(item => item.Forecast)
+                .OrderBy(item => item.ForecastTime)
+                .ToList());
     }
 
     private sealed class ThrowingWeatherApiClient : IWeatherApiClient

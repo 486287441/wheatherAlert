@@ -46,6 +46,16 @@ public sealed class SqliteSchemaInitializer : IHostedService
                 body TEXT NOT NULL,
                 meta_json TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS hourly_forecast_cache (
+                city_code TEXT NOT NULL,
+                forecast_time TEXT NOT NULL,
+                precipitation_mm REAL NOT NULL,
+                precipitation_probability INTEGER NOT NULL,
+                condition_text TEXT,
+                captured_at TEXT NOT NULL,
+                PRIMARY KEY (city_code, forecast_time)
+            );
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
         _logger.LogInformation("SQLite schema ensured.");

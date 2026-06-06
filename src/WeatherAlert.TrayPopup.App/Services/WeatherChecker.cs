@@ -17,6 +17,7 @@ public sealed class WeatherChecker : IWeatherChecker
     private readonly IRainDetectionService _rainDetectionService;
     private readonly INotificationStateRepository _notificationStateRepository;
     private readonly INotificationHistoryRepository _notificationHistoryRepository;
+    private readonly IHourlyForecastCacheRepository _hourlyForecastCacheRepository;
     private readonly IAppStateRepository _appStateRepository;
     private readonly IToastNotificationService _toastNotificationService;
     private readonly IOptions<WeatherOptions> _options;
@@ -28,6 +29,7 @@ public sealed class WeatherChecker : IWeatherChecker
         IRainDetectionService rainDetectionService,
         INotificationStateRepository notificationStateRepository,
         INotificationHistoryRepository notificationHistoryRepository,
+        IHourlyForecastCacheRepository hourlyForecastCacheRepository,
         IAppStateRepository appStateRepository,
         IToastNotificationService toastNotificationService,
         IOptions<WeatherOptions> options,
@@ -38,6 +40,7 @@ public sealed class WeatherChecker : IWeatherChecker
         _rainDetectionService = rainDetectionService;
         _notificationStateRepository = notificationStateRepository;
         _notificationHistoryRepository = notificationHistoryRepository;
+        _hourlyForecastCacheRepository = hourlyForecastCacheRepository;
         _appStateRepository = appStateRepository;
         _toastNotificationService = toastNotificationService;
         _options = options;
@@ -50,6 +53,7 @@ public sealed class WeatherChecker : IWeatherChecker
         {
             var cityCode = await ResolveCityCodeAsync(cancellationToken);
             var hourly = await _weatherApiClient.GetHourlyForecastAsync(cityCode, cancellationToken);
+            await _hourlyForecastCacheRepository.UpsertAsync(cityCode, hourly, _clock.Now, cancellationToken);
             var result = _rainDetectionService.Detect(hourly, _clock.Now);
             await PersistRainNotificationStateAsync(cityCode, result.Today, RainDayPerspective.Today, showToastNotifications, cancellationToken);
             await PersistRainNotificationStateAsync(cityCode, result.Tomorrow, RainDayPerspective.Tomorrow, showToastNotifications, cancellationToken);

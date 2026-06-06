@@ -106,6 +106,7 @@ public sealed class TrayHostedService : IHostedService, IDisposable
         var menu = new ContextMenuStrip();
         menu.Items.Add("立即检查", null, async (_, _) => await RunManualCheckAsync());
         menu.Items.Add("查看历史通知", null, (_, _) => ShowHistoryWindow());
+        menu.Items.Add("48小时天气", null, (_, _) => ShowHourlyForecastWindow());
         menu.Items.Add("切换城市", null, async (_, _) => await ShowCityDialogAsync());
         menu.Items.Add("-");
         menu.Items.Add("退出", null, (_, _) => _applicationLifetime.StopApplication());
@@ -206,6 +207,34 @@ public sealed class TrayHostedService : IHostedService, IDisposable
             {
                 _logger.LogError(ex, "Failed to open history window.");
                 _toastNotificationService.ShowError("WeatherAlert", "打开历史通知失败，请查看日志。");
+            }
+        });
+    }
+
+    private void ShowHourlyForecastWindow()
+    {
+        if (_wpfApp is null)
+        {
+            return;
+        }
+
+        _wpfApp.Dispatcher.BeginInvoke(() =>
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var weatherApiClient = scope.ServiceProvider.GetRequiredService<IWeatherApiClient>();
+                var hourlyForecastCache = scope.ServiceProvider.GetRequiredService<IHourlyForecastCacheRepository>();
+                var cityLocation = scope.ServiceProvider.GetRequiredService<ICityLocationService>();
+                var cityCatalog = scope.ServiceProvider.GetRequiredService<ICityCatalog>();
+                var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+                var window = new HourlyForecastWindow(weatherApiClient, hourlyForecastCache, cityLocation, cityCatalog, clock);
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to open hourly forecast window.");
+                _toastNotificationService.ShowError("WeatherAlert", "打开48小时天气失败，请查看日志。");
             }
         });
     }

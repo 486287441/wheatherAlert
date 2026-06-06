@@ -38,6 +38,10 @@
     <Content Include="Assets\tray-clear.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\..\assets\weather-icons\*.png">
+      <Link>Assets\weather-icons\%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\WeatherAlert.TrayPopup.Infrastructure\Data\china-cities.csv">
       <Link>Data\china-cities.csv</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

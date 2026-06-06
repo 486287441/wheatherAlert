@@ -52,6 +52,7 @@ builder.Services.AddSingleton<ICityCatalog, ChinaCityCatalog>();
 builder.Services.AddSingleton<IAppStateRepository, AppStateRepository>();
 builder.Services.AddSingleton<INotificationStateRepository, NotificationStateRepository>();
 builder.Services.AddSingleton<INotificationHistoryRepository, NotificationHistoryRepository>();
+builder.Services.AddSingleton<IHourlyForecastCacheRepository, HourlyForecastCacheRepository>();
 builder.Services.AddSingleton<IDeviceLocationProvider, WindowsGeolocationProvider>();
 builder.Services.AddSingleton<ICityLocationService, CityLocationService>();
 builder.Services.AddHttpClient<IWeatherApiClient, HeWeatherClient>((sp, client) =>

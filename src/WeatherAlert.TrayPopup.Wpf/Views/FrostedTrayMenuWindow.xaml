@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="WeatherAlert Menu"
         Width="280"
-        Height="268"
+        Height="308"
         WindowStartupLocation="Manual"
         ShowActivated="False"
         Focusable="True">
@@ -26,6 +26,9 @@
             <Button Style="{StaticResource FrostedMenuButton}"
                     Content="查看历史通知"
                     Click="OnHistoryClick" />
+            <Button Style="{StaticResource FrostedMenuButton}"
+                    Content="48小时天气"
+                    Click="OnHourlyForecastClick" />
             <Button Style="{StaticResource FrostedMenuButton}"
                     Content="切换城市"
                     Click="OnChangeCityClick" />
