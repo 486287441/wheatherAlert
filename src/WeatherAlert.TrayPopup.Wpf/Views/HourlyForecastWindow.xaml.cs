@@ -1,7 +1,9 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using WeatherAlert.TrayPopup.Core.Abstractions;
 using WeatherAlert.TrayPopup.Core.Models;
+using WeatherAlert.TrayPopup.Core.Placement;
 using WeatherAlert.TrayPopup.Wpf.ViewModels;
 
 namespace WeatherAlert.TrayPopup.Wpf.Views;
@@ -77,9 +79,10 @@ public partial class HourlyForecastWindow : Window
             TomorrowItems.ItemsSource = tomorrowRows.Select(ToViewModel).ToList();
 
             SubtitleText.Text = availableCount >= HourlyForecastTimeline.DefaultWindowHours
-                ? "\u4eca\u5929\u3001\u660e\u5929\u5404\u4e00\u884c\uff0c\u6bcf\u884c 24 \u5c0f\u65f6\uff0c\u53ef\u6a2a\u5411\u6ed1\u52a8\u67e5\u770b"
+                ? "\u4eca\u5929\u3001\u660e\u5929\u5404\u4e00\u884c\uff0c\u6bcf\u884c 24 \u5c0f\u65f6\uff0c\u53ef\u62d6\u62fd\u6216\u6eda\u8f6e\u6a2a\u5411\u67e5\u770b"
                 : $"\u4eca\u5929\u3001\u660e\u5929\u5404\u4e00\u884c\uff0c\u5f53\u524d\u53ef\u7528 {availableCount}/{HourlyForecastTimeline.DefaultWindowHours} \u5c0f\u65f6\uff08\u7f3a\u5931\u5c0f\u65f6\u4f1a\u968f\u672c\u5730\u7f13\u5b58\u8865\u5168\uff09";
             EmptyText.Visibility = availableCount == 0 ? Visibility.Visible : Visibility.Collapsed;
+            ScheduleWindowPlacement();
         }
         catch (Exception ex)
         {
@@ -87,6 +90,46 @@ public partial class HourlyForecastWindow : Window
             EmptyText.Text = ex.Message;
             EmptyText.Visibility = Visibility.Visible;
         }
+    }
+
+    private void ScheduleWindowPlacement()
+    {
+        Dispatcher.BeginInvoke(ApplyWindowPlacement, DispatcherPriority.Loaded);
+    }
+
+    private void ApplyWindowPlacement()
+    {
+        ContentHost.UpdateLayout();
+        ContentHost.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var measured = ContentHost.DesiredSize;
+        var fallback = HourlyForecastWindowLayout.GetIdealContentSize();
+        var contentWidth = measured.Width > 1 ? measured.Width : fallback.Width;
+        var contentHeight = measured.Height > 1 ? measured.Height : fallback.Height;
+
+        var chromeWidth = HourlyForecastWindowLayout.WindowContentMargin * 2
+            + SystemParameters.WindowResizeBorderThickness.Left
+            + SystemParameters.WindowResizeBorderThickness.Right;
+        var chromeHeight = HourlyForecastWindowLayout.WindowContentMargin * 2
+            + SystemParameters.WindowCaptionHeight
+            + SystemParameters.WindowResizeBorderThickness.Top
+            + SystemParameters.WindowResizeBorderThickness.Bottom;
+
+        var workArea = SystemParameters.WorkArea;
+        var bounds = WindowPlacementCalculator.CalculateCenterFit(new CenteredWindowPlacementRequest(
+            new ScreenRect(workArea.Left, workArea.Top, workArea.Width, workArea.Height),
+            contentWidth + chromeWidth,
+            contentHeight + chromeHeight,
+            MinWidth: 720,
+            MinHeight: 480));
+
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = bounds.Left;
+        Top = bounds.Top;
+        Width = bounds.Width;
+        Height = bounds.Height;
+
+        TodayScrollViewer.ScrollToHorizontalOffset(0);
+        TomorrowScrollViewer.ScrollToHorizontalOffset(0);
     }
 
     private static HourlyForecastItemViewModel ToViewModel(HourlyForecastRowSlot slot)
