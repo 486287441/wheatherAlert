@@ -12,6 +12,7 @@ public sealed class CitySelectionViewModel : INotifyPropertyChanged
     private readonly ICityCatalog _catalog;
     private readonly ICityLocationService _cityLocation;
     private string _searchText = string.Empty;
+    private string _currentCityText = "加载中…";
     private string _locatedCityText = "正在获取定位…";
     private bool _isLocating;
     private ChinaCityEntry? _selectedCity;
@@ -41,6 +42,21 @@ public sealed class CitySelectionViewModel : INotifyPropertyChanged
             _searchText = value;
             OnPropertyChanged();
             CitiesView.Refresh();
+        }
+    }
+
+    public string CurrentCityText
+    {
+        get => _currentCityText;
+        private set
+        {
+            if (_currentCityText == value)
+            {
+                return;
+            }
+
+            _currentCityText = value;
+            OnPropertyChanged();
         }
     }
 
@@ -98,9 +114,21 @@ public sealed class CitySelectionViewModel : INotifyPropertyChanged
 
     public async Task InitializeAsync(string? currentCityCode, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrWhiteSpace(currentCityCode))
+        var current = await _cityLocation.GetCurrentCityAsync(cancellationToken).ConfigureAwait(true);
+        if (current is not null)
         {
-            SelectedCity = _catalog.FindById(currentCityCode);
+            CurrentCityText = current.Value.Name;
+            SelectedCity = _catalog.FindById(current.Value.Code);
+        }
+        else if (!string.IsNullOrWhiteSpace(currentCityCode))
+        {
+            var entry = _catalog.FindById(currentCityCode);
+            CurrentCityText = entry?.DisplayName ?? currentCityCode;
+            SelectedCity = entry;
+        }
+        else
+        {
+            CurrentCityText = "未设置";
         }
 
         await RefreshLocatedCityAsync(cancellationToken).ConfigureAwait(true);

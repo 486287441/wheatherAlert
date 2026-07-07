@@ -135,17 +135,21 @@ public sealed class TrayHostedService : IHostedService, IDisposable
     {
         if (!result.HasAnyRain)
         {
-            _toastNotificationService.ShowInfo("WeatherAlert", "今天和明天均无降雨。");
+            var now = DateTimeOffset.Now;
+            var todayLabel = NotificationHistoryFormatter.FormatTargetDayLabel(result.Today.Date, now);
+            var tomorrowLabel = NotificationHistoryFormatter.FormatTargetDayLabel(result.Tomorrow.Date, now);
+            _toastNotificationService.ShowInfo("WeatherAlert", $"{todayLabel}和{tomorrowLabel}均无降雨。");
             return Task.CompletedTask;
         }
 
-        ShowDayRainToast("今天", result.Today);
-        ShowDayRainToast("明天", result.Tomorrow);
+        ShowDayRainToast(result.Today);
+        ShowDayRainToast(result.Tomorrow);
         return Task.CompletedTask;
     }
 
-    private void ShowDayRainToast(string dayLabel, DailyRainSummary summary)
+    private void ShowDayRainToast(DailyRainSummary summary)
     {
+        var dayLabel = NotificationHistoryFormatter.FormatTargetDayLabel(summary.Date, DateTimeOffset.Now);
         var title = $"降雨提醒 · {dayLabel}";
         var body = RainSummaryFormatter.FormatBalloonBody(summary);
         if (summary.HasRain)

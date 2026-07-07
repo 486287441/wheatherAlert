@@ -56,7 +56,7 @@ public sealed class WeatherCheckerTests
         await checker.CheckAsync(CancellationToken.None);
 
         Assert.Single(toast.Warnings);
-        Assert.Equal("降雨提醒 · 明天", toast.Warnings[0].Title);
+        Assert.Equal("降雨提醒 · 明天（6月7号，星期日）", toast.Warnings[0].Title);
     }
 
     [Fact]
@@ -97,8 +97,8 @@ public sealed class WeatherCheckerTests
         await checkerRainDay.CheckAsync(CancellationToken.None);
 
         Assert.Equal(2, history.Count);
-        Assert.Equal("降雨提醒 · 明天", history.Entries[0].Title);
-        Assert.Equal("降雨提醒 · 今天", history.Entries[1].Title);
+        Assert.Equal("降雨提醒 · 明天（6月7号，星期日）", history.Entries[0].Title);
+        Assert.Equal("降雨提醒 · 今天（6月7号，星期日）", history.Entries[1].Title);
     }
 
     [Fact]

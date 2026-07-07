@@ -22,7 +22,7 @@ public sealed class NotificationHistoryFormatterTests
 
         Assert.Equal("降雨", row.Type);
         Assert.Equal("广州", row.City);
-        Assert.Equal("明天 00:00-14:00 有降雨（中雨）", row.Detail);
+        Assert.Equal("明天（5月30号，星期六） 00:00-14:00 有降雨（中雨）", row.Detail);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class NotificationHistoryFormatterTests
 
         var row = NotificationHistoryFormatter.ToDisplayRow(entry, "广州");
 
-        Assert.Equal("今天 12:00-24:00 有降雨（大雨）", row.Detail);
+        Assert.Equal("今天（6月6号，星期六） 12:00-24:00 有降雨（大雨）", row.Detail);
     }
 
     [Fact]
@@ -58,6 +58,16 @@ public sealed class NotificationHistoryFormatterTests
 
         var row = NotificationHistoryFormatter.ToDisplayRow(entry, "广州");
 
-        Assert.Equal("明天 00:00-14:00 有降雨（中雨）", row.Detail);
+        Assert.Equal("明天（5月30号，星期六） 00:00-14:00 有降雨（中雨）", row.Detail);
+    }
+
+    [Fact]
+    public void FormatTargetDayLabel_TodayAndTomorrow_IncludesDateAndWeekday()
+    {
+        var reference = new DateTimeOffset(2026, 6, 18, 10, 0, 0, TimeSpan.FromHours(8));
+
+        Assert.Equal("今天（6月18号，星期四）", NotificationHistoryFormatter.FormatTargetDayLabel(new DateOnly(2026, 6, 18), reference));
+        Assert.Equal("明天（6月19号，星期五）", NotificationHistoryFormatter.FormatTargetDayLabel(new DateOnly(2026, 6, 19), reference));
+        Assert.Equal("06月20日", NotificationHistoryFormatter.FormatTargetDayLabel(new DateOnly(2026, 6, 20), reference));
     }
 }

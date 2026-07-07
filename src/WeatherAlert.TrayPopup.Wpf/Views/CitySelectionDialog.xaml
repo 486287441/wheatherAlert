@@ -17,18 +17,43 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="当前定位城市"
+                   Text="当前使用城市"
                    FontSize="14"
                    FontWeight="SemiBold"
                    Foreground="#1E293B"
                    Margin="0,0,0,8" />
 
         <Border Grid.Row="1"
+                Background="#EFF6FF"
+                BorderBrush="#BFDBFE"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,12">
+            <TextBlock Text="{Binding CurrentCityText}"
+                       TextWrapping="Wrap"
+                       FontWeight="SemiBold"
+                       Foreground="#1D4ED8" />
+        </Border>
+
+        <Separator Grid.Row="2" Margin="0,0,0,12" />
+
+        <TextBlock Grid.Row="3"
+                   Text="当前定位城市"
+                   FontSize="14"
+                   FontWeight="SemiBold"
+                   Foreground="#1E293B"
+                   Margin="0,0,0,8" />
+
+        <Border Grid.Row="4"
                 Background="#FFFFFF"
                 BorderBrush="#E2E8F0"
                 BorderThickness="1"
@@ -59,21 +84,21 @@
             </Grid>
         </Border>
 
-        <Separator Grid.Row="2" Margin="0,0,0,12" />
+        <Separator Grid.Row="5" Margin="0,0,0,12" />
 
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="6"
                    Text="搜索城市或省份（中文名或 Location ID）"
                    Foreground="#64748B"
                    FontSize="12"
                    Margin="0,0,0,4" />
-        <TextBox Grid.Row="4"
+        <TextBox Grid.Row="7"
                  x:Name="SearchBox"
                  Margin="0,0,0,8"
                  Padding="8,6"
                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                  />
 
-        <ListBox Grid.Row="5"
+        <ListBox Grid.Row="8"
                  x:Name="CityList"
                  ItemsSource="{Binding CitiesView}"
                  SelectedItem="{Binding SelectedCity, Mode=TwoWay}"
@@ -103,7 +128,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <StackPanel Grid.Row="6"
+        <StackPanel Grid.Row="9"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,12,0,0">

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace WeatherAlert.TrayPopup.Core.Models;
@@ -97,38 +98,63 @@ public static class NotificationHistoryFormatter
 
     private static string? ExtractTargetDayLabel(string title, string body, DateTimeOffset createdAt)
     {
+        const string titlePrefix = "降雨提醒 · ";
+        string? label = null;
+        if (title.StartsWith(titlePrefix, StringComparison.Ordinal))
+        {
+            label = title[titlePrefix.Length..].Trim();
+        }
+
+        if (label is "今天" or "明天")
+        {
+            var refToday = DateOnly.FromDateTime(createdAt.LocalDateTime);
+            var targetDate = label == "今天" ? refToday : refToday.AddDays(1);
+            return FormatTargetDayLabel(targetDate, createdAt);
+        }
+
+        if (!string.IsNullOrWhiteSpace(label))
+        {
+            return label;
+        }
+
         if (title.Contains("今天", StringComparison.Ordinal) || body.Contains("今天", StringComparison.Ordinal))
         {
-            return "今天";
+            return FormatTargetDayLabel(DateOnly.FromDateTime(createdAt.LocalDateTime), createdAt);
         }
 
         if (title.Contains("明天", StringComparison.Ordinal) || body.Contains("明天", StringComparison.Ordinal))
         {
-            return "明天";
+            return FormatTargetDayLabel(DateOnly.FromDateTime(createdAt.LocalDateTime).AddDays(1), createdAt);
         }
 
         var match = DatePattern.Match($"{title} {body}");
-        if (!match.Success || !DateOnly.TryParse(match.Value, out var targetDate))
+        if (!match.Success || !DateOnly.TryParse(match.Value, out var parsedDate))
         {
             return null;
         }
 
-        return FormatTargetDayLabel(targetDate, createdAt);
+        return FormatTargetDayLabel(parsedDate, createdAt);
     }
 
-    private static string FormatTargetDayLabel(DateOnly targetDate, DateTimeOffset referenceTime)
+    public static string FormatTargetDayLabel(DateOnly targetDate, DateTimeOffset referenceTime)
     {
         var today = DateOnly.FromDateTime(referenceTime.LocalDateTime);
         if (targetDate == today)
         {
-            return "今天";
+            return $"今天{FormatDateParenthetical(targetDate)}";
         }
 
         if (targetDate == today.AddDays(1))
         {
-            return "明天";
+            return $"明天{FormatDateParenthetical(targetDate)}";
         }
 
         return targetDate.ToString("MM月dd日");
+    }
+
+    private static string FormatDateParenthetical(DateOnly date)
+    {
+        var weekday = CultureInfo.GetCultureInfo("zh-CN").DateTimeFormat.GetDayName(date.DayOfWeek);
+        return $"（{date.Month}月{date.Day}号，{weekday}）";
     }
 }
