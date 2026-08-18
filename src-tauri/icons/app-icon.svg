@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="76" y1="40" x2="432" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#62D5FF"/><stop offset=".52" stop-color="#168CFA"/><stop offset="1" stop-color="#1568E9"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="162" y1="157" x2="345" y2="325" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white"/><stop offset="1" stop-color="#DCEFFF"/>
+    </linearGradient>
+    <filter id="shadow" x="91" y="112" width="330" height="272" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0753A3" flood-opacity=".28"/>
+    </filter>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="116" fill="url(#bg)"/>
+  <rect x="34" y="34" width="444" height="444" rx="106" stroke="white" stroke-opacity=".35" stroke-width="4"/>
+  <path d="M85 169C127 72 310 47 419 134" stroke="white" stroke-opacity=".23" stroke-width="28" stroke-linecap="round"/>
+  <g filter="url(#shadow)">
+    <path d="M353 286H160C126 286 104 262 104 231C104 201 127 177 158 176C171 133 209 107 252 107C306 107 349 148 353 199C386 202 408 221 408 244C408 268 385 286 353 286Z" fill="url(#cloud)"/>
+  </g>
+  <path d="M181 326L164 365" stroke="#B8F2FF" stroke-width="17" stroke-linecap="round"/>
+  <path d="M256 326L239 365" stroke="#B8F2FF" stroke-width="17" stroke-linecap="round"/>
+  <path d="M331 326L314 365" stroke="#B8F2FF" stroke-width="17" stroke-linecap="round"/>
+</svg>

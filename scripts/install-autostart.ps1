@@ -1,15 +1,7 @@
 #Requires -Version 5.1
-# ? WeatherAlert ??????????????????????
-# ??: .\scripts\install-autostart.ps1
 $ErrorActionPreference = 'Stop'
-
 . (Join-Path $PSScriptRoot 'autostart-common.ps1')
 
 $exe = Get-WeatherAlertExe -BuildIfMissing
 $shortcutPath = New-WeatherAlertStartupShortcut -Exe $exe
-
-Write-Host "????????"
-Write-Host "  ????: $shortcutPath"
-Write-Host "  ????: $($exe.FullName)"
-Write-Host ""
-Write-Host "???????: .\scripts\uninstall-autostart.ps1"
+Write-Host "已启用 WeatherAlert 开机自启：$shortcutPath"

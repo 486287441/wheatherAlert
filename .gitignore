@@ -71,3 +71,7 @@ publish/
 
 # Local API notes (never commit keys)
 和风天气
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/

@@ -1,110 +1,87 @@
-# WeatherAlert（托盘降雨提醒）
+# WeatherAlert
 
-Windows 托盘应用：定时查询和风天气，今天或明天有雨时切换托盘图标并记录通知历史。支持 Windows 定位 + 和风 GeoAPI 自动识别城市，也可在完整中国城市列表中手动切换。
+一款使用 **Tauri 2 + React + Rust** 构建的 Windows 桌面降雨提醒。界面采用纯白液态玻璃风格，应用可以驻留系统托盘，定时查询和风天气，并在今天或明天有雨时发送系统通知。
 
 ## 功能
 
-- **托盘右键**：立即检查 / 历史记录 / 切换城市 / 退出
-- **托盘左键**：无操作
-- **图标**：今天或明天有雨 → 雨伞；否则 → 铃铛
-- **城市**：北京、上海、深圳、广州（可在菜单中切换）
+- 未来 72 小时天气与 16 小时可视化时间轴
+- 今天/明天降雨识别、强度判断和连续时段合并
+- 中国城市搜索与 Windows 当前位置识别
+- SQLite 天气缓存、通知历史和降雨通知去重
+- 后台定时轮询、系统托盘和登录后静默自启
+- 本地 API 配置；密钥不会进入前端代码
+- 无网络时继续显示最近一次缓存
 
 ## 环境要求
 
-- Windows 10/11
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- Windows 10/11，系统包含 WebView2
+- Node.js 20 或更高版本
+- Rust stable（MSVC toolchain）
+- Visual Studio C++ Build Tools
 
-## 配置 API 密钥
-
-仓库中的 `appsettings.json` 仅含占位符，**请勿把真实 Key 提交到 Git**。
-
-任选一种方式配置和风 API：
-
-1. **本地文件（推荐）**  
-   复制 `src/WeatherAlert.TrayPopup.App/appsettings.Local.json.example` 为同目录下的 `appsettings.Local.json`，填入 `ApiKey` 与专属 `ApiBaseUrl`。该文件已在 `.gitignore` 中忽略。
-
-2. **环境变量**  
-   ```powershell
-   $env:WEATHER_ALERT_Weather__ApiKey = "你的密钥"
-   ```
-
-3. **直接改本地 `appsettings.json`**  
-   仅用于本机调试；提交前请恢复为 `REPLACE_WITH_YOUR_API_KEY`。
-
-在 [和风天气控制台](https://console.qweather.com/) 创建项目并获取 Key 与 API Host。
-
-## 运行
-
-**一键启动（推荐）**
-
-| 方式 | 命令 |
-|------|------|
-| 资源管理器 | 双击 `start.bat` |
-| PowerShell | `.\start.bat` 或 `.\start.ps1` |
-| CMD | `start.bat` |
-
-PowerShell 下必须加 `.\` 前缀，否则会报“无法识别 start.bat”。首次运行会自动编译 Release 版本。
-
-立即执行一次检查：
+## 开发运行
 
 ```powershell
-.\start.bat --check-now
-# 或
-.\start.ps1 --check-now
+npm install
+npm run tauri:dev
 ```
 
-**开发调试（dotnet run）**
-
-```powershell
-cd d:\code\wheatherAlert
-dotnet run --project src/WeatherAlert.TrayPopup.App
-```
+也可以双击 `start.bat`。只预览 React 界面时运行：
 
 ```powershell
-dotnet run --project src/WeatherAlert.TrayPopup.App -- --check-now
+npm run dev
 ```
+
+浏览器预览使用演示数据；Tauri 窗口使用真实 Rust 后端。
+
+## 配置天气服务
+
+首次启动后进入 **偏好设置 → 天气数据**，填写和风天气控制台提供的：
+
+- API Host，例如 `https://abcxyz.qweatherapi.com`
+- API Key
+
+保存后点击右上角刷新按钮。配置保存在当前用户的应用数据目录，不会写入仓库。开发模式首次启动时，如果检测到旧版 `src/WeatherAlert.TrayPopup.App/appsettings.Local.json`，会安全迁移其中的 API 配置。
 
 ## 开机自启
 
-在用户登录 Windows 后自动启动托盘程序（写入当前用户的「启动」文件夹，无需管理员权限）。
+在应用的 **偏好设置 → 系统行为 → 开机自动启动** 中开启。登录 Windows 后应用会静默驻留托盘，不弹出主窗口，也不需要管理员权限。
 
-| 方式 | 命令 |
-|------|------|
-| 资源管理器 | 双击 `install-autostart.bat` |
-| PowerShell | `.\scripts\install-autostart.ps1` |
+仓库根目录的 `install-autostart.bat` / `uninstall-autostart.bat` 作为脚本备用入口。
 
-取消自启：双击 `uninstall-autostart.bat`，或运行 `.\scripts\uninstall-autostart.ps1`。
-
-安装时会自动编译 Release 版本（若尚未编译），快捷方式直接指向 `WeatherAlert.TrayPopup.App.exe`，并设置正确的工作目录，以便加载 `appsettings` 与 `data/`。
-
-也可在 **设置 → 应用 → 启动** 中查看或关闭「WeatherAlert」项。
-
-## 测试
+## 构建安装包
 
 ```powershell
-dotnet test WeatherAlert.TrayPopup.sln
+npm run tauri:build
 ```
 
-或运行仓库脚本：
+产物位于 `src-tauri/target/release/bundle/`。Windows 默认生成 MSI 和 NSIS 安装包。
+
+## 验证
 
 ```powershell
-.\scripts\verify-all-modules.ps1
+npm run build
+cd src-tauri
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
 ```
 
 ## 项目结构
 
 | 路径 | 说明 |
-|------|------|
-| `src/WeatherAlert.TrayPopup.App` | 宿主：托盘、后台轮询、配置 |
-| `src/WeatherAlert.TrayPopup.Core` | 领域模型与接口 |
-| `src/WeatherAlert.TrayPopup.Infrastructure` | SQLite、和风 API 客户端 |
-| `src/WeatherAlert.TrayPopup.Wpf` | 历史/城市选择等 WPF 窗口 |
-| `tests/WeatherAlert.TrayPopup.Tests` | 单元测试 |
-| `scripts/install-autostart.ps1` | 添加开机自启 |
-| `scripts/uninstall-autostart.ps1` | 移除开机自启 |
-| `plan/` | 模块拆分与验收记录 |
+|---|---|
+| `src/` | React/TypeScript 界面 |
+| `src-tauri/src/` | Rust 后端、天气业务、SQLite 与系统集成 |
+| `src-tauri/icons/` | 桌面应用和安装包图标 |
+| `src/WeatherAlert.*` | 旧版 C# 实现，迁移验证期保留 |
+| `tests/` | 旧版 C# 回归测试 |
 
-## 日志与数据
+## 本地数据
 
-- 日志：`logs/`（已忽略，不提交）
-- 数据库：`data/weather-alert.db`（已忽略，不提交）
+Tauri 版数据保存在 Windows 当前用户应用数据目录下的 `com.weatheralert.desktop`：
+
+- `settings.json`：API、城市和偏好设置
+- `weather-alert.db`：天气缓存、通知记录和去重状态
+
+真实密钥、数据库、构建产物均已由 `.gitignore` 排除。

@@ -8,37 +8,18 @@ function Get-WeatherAlertExe {
     param([switch]$BuildIfMissing)
 
     $root = Get-WeatherAlertRoot
-    $proj = Join-Path $root 'src\WeatherAlert.TrayPopup.App\WeatherAlert.TrayPopup.App.csproj'
-    $releaseDir = Join-Path $root 'src\WeatherAlert.TrayPopup.App\bin\Release'
-
-    $findExe = {
-        Get-ChildItem -Path $releaseDir -Recurse -Filter 'WeatherAlert.TrayPopup.App.exe' -ErrorAction SilentlyContinue |
-            Sort-Object LastWriteTime -Descending |
-            Select-Object -First 1
-    }
-
-    $exe = & $findExe
-
-    if (-not $exe -and $BuildIfMissing) {
-        Write-Host '??? Release ??????????...'
+    $exePath = Join-Path $root 'src-tauri\target\release\weather-alert.exe'
+    if (-not (Test-Path -LiteralPath $exePath) -and $BuildIfMissing) {
+        Write-Host '未找到 Release 程序，正在构建 Tauri 安装包...'
         Push-Location $root
         try {
-            dotnet build $proj -c Release -v minimal
-            if ($LASTEXITCODE -ne 0) {
-                throw "???????? $LASTEXITCODE"
-            }
+            npm run tauri:build
+            if ($LASTEXITCODE -ne 0) { throw "构建失败：$LASTEXITCODE" }
         }
-        finally {
-            Pop-Location
-        }
-        $exe = & $findExe
+        finally { Pop-Location }
     }
-
-    if (-not $exe) {
-        throw '??? WeatherAlert.TrayPopup.App.exe????? start.bat???????????? install-autostart.ps1????????'
-    }
-
-    $exe
+    if (-not (Test-Path -LiteralPath $exePath)) { throw "找不到程序：$exePath" }
+    Get-Item -LiteralPath $exePath
 }
 
 function Get-WeatherAlertStartupShortcut {
@@ -46,18 +27,15 @@ function Get-WeatherAlertStartupShortcut {
 }
 
 function New-WeatherAlertStartupShortcut {
-    param(
-        [Parameter(Mandatory)]
-        [System.IO.FileInfo]$Exe
-    )
-
+    param([Parameter(Mandatory)][System.IO.FileInfo]$Exe)
     $shortcutPath = Get-WeatherAlertStartupShortcut
     $shell = New-Object -ComObject WScript.Shell
     $link = $shell.CreateShortcut($shortcutPath)
     $link.TargetPath = $Exe.FullName
+    $link.Arguments = '--autostart'
     $link.WorkingDirectory = $Exe.DirectoryName
-    $link.Description = 'WeatherAlert ??????'
+    $link.Description = 'WeatherAlert 降雨提醒'
+    $link.IconLocation = $Exe.FullName
     $link.Save()
-
     $shortcutPath
 }

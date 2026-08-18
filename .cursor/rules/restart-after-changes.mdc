@@ -1,0 +1,31 @@
+---
+description: After functional changes, restart the WeatherAlert tray app so the user can test immediately.
+alwaysApply: true
+---
+
+# Restart app after functional changes
+
+When you finish implementing or fixing **user-facing behavior** in this repo (UI, tray menu, notifications, weather logic, config that affects runtime, etc.):
+
+1. **Stop** any running instance of WeatherAlert before starting a new one.
+2. **Start** the app again so the user can verify without manual steps.
+
+## How to restart (Windows)
+
+```powershell
+Get-Process -Name "WeatherAlert.TrayPopup.App" -ErrorAction SilentlyContinue | Stop-Process -Force
+dotnet run --project src/WeatherAlert.TrayPopup.App/WeatherAlert.TrayPopup.App.csproj -c Release
+```
+
+Run `dotnet run` in the **background** (tray app stays running).
+
+If the process name differs, also stop orphaned `dotnet` hosts that are running this project (check cwd or command line), but prefer stopping by `WeatherAlert.TrayPopup.App` first.
+
+## When to restart
+
+- **Do restart**: feature changes, bug fixes, XAML/UI updates, services wired in `Program.cs`, appsettings behavior changes.
+- **Skip restart**: docs-only, comments-only, test-only changes with no runtime impact, or the user explicitly says not to restart.
+
+## After restart
+
+Briefly tell the user the app was restarted and what to check (e.g. tray icon ? ?48?????).

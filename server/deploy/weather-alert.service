@@ -1,0 +1,17 @@
+[Unit]
+Description=WeatherAlert cloud rain check
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=weather-alert
+Group=weather-alert
+WorkingDirectory=/opt/weather-alert-server
+EnvironmentFile=/etc/weather-alert-server.env
+ExecStart=/usr/bin/python3 /opt/weather-alert-server/weather_alert.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/weather-alert-server
